@@ -242,6 +242,11 @@ class _MainPage extends State<MainPage> {
           port = info[1];
         });
       }
+      if (info[0] == "MOBILE") {
+        setState(() {
+          mobile = info[1] == "1" ? true : false;
+        });
+      }
     }
   }
 
@@ -311,9 +316,10 @@ class _MainPage extends State<MainPage> {
 
   finish() {
     connection.output.add(utf8.encode("EXIT" + "\r\n") as Uint8List);
-    setState(() {
-      _connected = false;
-    });
+  }
+
+  restartDevice() {
+    connection.output.add(utf8.encode("RESTART" + "\r\n") as Uint8List);
   }
 
   updateInfo() {
@@ -686,10 +692,17 @@ class _MainPage extends State<MainPage> {
                               )
                             ],
                           ),
-                          Switch(
-                              value: mobile,
-                              onChanged: (v) =>
-                                  {v ? changeToMobile() : changeToStatic()}),
+                          infoUpdated
+                              ? Switch(
+                                  value: mobile,
+                                  onChanged: (v) =>
+                                      {v ? changeToMobile() : changeToStatic()})
+                              : Container(
+                                  margin: EdgeInsets.all(20),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: CircularProgressIndicator(),
+                                  )),
                         ],
                       ),
                     ),
@@ -779,6 +792,10 @@ class _MainPage extends State<MainPage> {
                         ElevatedButton(
                           onPressed: () => {finish()},
                           child: Text('Salir'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => {restartDevice()},
+                          child: Text('Reiniciar'),
                         ),
                       ])),
             ],
