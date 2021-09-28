@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert' show utf8;
 import 'dart:typed_data';
+import 'package:aq_iot_flutter/Route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+
+import './Route.dart';
 
 class MainPage extends StatefulWidget {
   @override
@@ -40,6 +43,8 @@ class _MainPage extends State<MainPage> {
   bool mobile = false;
   bool editingInfo = false;
   bool infoUpdated = false;
+
+  bool inRoute = false;
 
   @override
   void initState() {
@@ -304,6 +309,12 @@ class _MainPage extends State<MainPage> {
   void cancelEdit() {
     setState(() {
       editingInfo = false;
+    });
+  }
+
+  void startRoute() {
+    setState(() {
+      inRoute = true;
     });
   }
 
@@ -711,6 +722,7 @@ class _MainPage extends State<MainPage> {
                       child: Column(
                           children: mobile
                               ? [
+                                  inRoute ? DeviceRoute() : Container(),
                                   ElevatedButton(
                                       style: ButtonStyle(
                                           shape: MaterialStateProperty.all<
@@ -719,7 +731,7 @@ class _MainPage extends State<MainPage> {
                                         borderRadius:
                                             BorderRadius.circular(25.0),
                                       ))),
-                                      onPressed: () => {},
+                                      onPressed: () => {startRoute()},
                                       child: Text("Iniciar ruta"))
                                 ]
                               : []),
