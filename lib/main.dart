@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import './MainPage.dart';
+import './NewDevice.dart';
 
 void main() {
   runApp(MyApp());
@@ -73,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: MainPage(),
+      home: NewDevice(),
     );
   }
 }

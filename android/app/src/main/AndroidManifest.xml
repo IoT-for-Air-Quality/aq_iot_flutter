@@ -10,6 +10,8 @@
         android:usesCleartextTraffic="true"
         android:label="aq_iot_flutter"
         android:icon="@mipmap/ic_launcher">
+        <meta-data android:name="com.google.android.geo.API_KEY"
+               android:value="AIzaSyDrm7ouwFoxlKwfyPmey6VkbnYfO2U-L9I"/>
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

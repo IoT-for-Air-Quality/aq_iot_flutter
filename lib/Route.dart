@@ -27,8 +27,7 @@ class _DeviceRouteState extends State<DeviceRoute> {
   StreamSubscription<Position>? _positionStreamSubscription;
   StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   bool positionStreamStarted = false;
-  MQTTManager manager =
-      MQTTManager(host: "test.mosquitto.org", identifier: "Yo");
+  MQTTManager manager = MQTTManager(host: "35.237.59.165", identifier: "Yo");
 
   static const topicLat = 'AQ/ESP32/LAT';
   static const topicLon = 'AQ/ESP32/LON';

@@ -17,7 +17,7 @@ class MQTTManager {
         _host = host;
 
   void initializeMQTTClient() {
-    _client = MqttServerClient("test.mosquitto.org", '');
+    _client = MqttServerClient("35.237.59.165", '');
     _client!.port = 1883;
     _client!.keepAlivePeriod = 20;
     _client!.onDisconnected = onDisconnected;
