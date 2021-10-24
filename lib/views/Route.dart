@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 
 import 'package:mqtt_client/mqtt_server_client.dart';
-import './MQTTManager.dart';
+import '../managers/MQTTManager.dart';
 
 class DeviceRoute extends StatefulWidget {
   DeviceRoute({Key? key}) : super(key: key);

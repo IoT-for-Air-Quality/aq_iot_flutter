@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert' show utf8;
 import 'dart:typed_data';
-import 'package:aq_iot_flutter/Route.dart';
+import 'package:aq_iot_flutter/views/Route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 
-import './Route.dart';
+import 'Route.dart';
 
 class MainPage extends StatefulWidget {
   @override

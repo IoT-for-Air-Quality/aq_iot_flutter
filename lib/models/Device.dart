@@ -1,10 +1,10 @@
 class Device {
-  final int id;
-  final double lat;
-  final double long;
-  final String type;
-  final int organization;
-  final bool display;
+  int id;
+  double lat;
+  double long;
+  String type;
+  int organization;
+  bool display;
 
   Device({
     required this.id,

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Organization {
   final int id;
   final String name;
@@ -14,7 +16,7 @@ class Organization {
     );
   }
 
-  static getOrganizations(List<Map<String, dynamic>> data) {
+  static getOrganizations(List data) {
     List<Organization> organtions = [];
     for (var element in data) {
       organtions.add(Organization(

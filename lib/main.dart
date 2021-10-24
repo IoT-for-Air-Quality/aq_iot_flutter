@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import './MainPage.dart';
-import './NewDevice.dart';
+import 'views/MainPage.dart';
+import 'views/NewDevice.dart';
 
 void main() {
   runApp(MyApp());
