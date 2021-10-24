@@ -1,14 +1,16 @@
-import 'package:aq_iot_flutter/views/MainPage.dart';
 import 'package:aq_iot_flutter/models/Organization.dart';
 import 'package:aq_iot_flutter/models/Variable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/gestures.dart';
 import '../models/Device.dart';
 import '../services/HttpService.dart';
+import 'ManageDevice.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 
 class NewDevice extends StatefulWidget {
   NewDevice({Key? key}) : super(key: key);
@@ -19,7 +21,14 @@ class NewDevice extends StatefulWidget {
 
 class _NewDeviceState extends State<NewDevice> {
   Device device = new Device(
-      id: 0, organization: 0, type: 'static', lat: 0, long: 0, display: false);
+      id: 0,
+      organization: 0,
+      type: 'static',
+      lat: 0,
+      long: 0,
+      display: false,
+      wifiSSID: '',
+      wifiPASS: '');
   double latitude = 0;
   double longitude = 0;
 
@@ -30,13 +39,25 @@ class _NewDeviceState extends State<NewDevice> {
       (value) {
         device.id = value;
         Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => MainPage()));
+            MaterialPageRoute(builder: (context) => ManageDevice(device)));
       },
     );
   }
 
+  Future<List<WifiNetwork>> loadWifiList() async {
+    List<WifiNetwork> htResultNetwork;
+    try {
+      htResultNetwork = await WiFiForIoTPlugin.loadWifiList();
+    } on PlatformException {
+      htResultNetwork = <WifiNetwork>[];
+    }
+
+    return htResultNetwork;
+  }
+
   List<Organization>? organizations;
   List<Variable>? variables;
+  List<WifiNetwork>? wifiNetworks;
 
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
@@ -88,20 +109,21 @@ class _NewDeviceState extends State<NewDevice> {
       tilt: 59.440717697143555,
       zoom: 19.151926040649414);
   Organization? dropdownValue;
+  WifiNetwork? dropdownValueWifi;
   String dropdownValue2 = 'Estático';
   bool isChecked = false;
 
   @override
   void initState() {
     super.initState();
-    debugPrint("jwhefkj");
     HttpService().getOrganizations().then((value) {
-      debugPrint("jwhefkj");
       setState(() => {organizations = value});
     });
     HttpService().getVariables().then((value) {
       setState(() => {variables = value});
-      debugPrint("$variables");
+    });
+    loadWifiList().then((value) {
+      setState(() => {wifiNetworks = value});
     });
   }
 
@@ -111,286 +133,64 @@ class _NewDeviceState extends State<NewDevice> {
         appBar: AppBar(
           title: const Text('Setup your new device'),
         ),
-        body: Container(
-          child: SingleChildScrollView(
-            child: Container(
-                child: Column(
-              children: [
-                Container(
-                  margin: const EdgeInsets.all(50.0),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(),
-                  child: Column(
+        body: (variables == null ||
+                organizations == null ||
+                wifiNetworks == null)
+            ? Container()
+            : Container(
+                child: SingleChildScrollView(
+                  child: Container(
+                      child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Configuración inicial de nodo sensor',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 37,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Flexible(
-                              child: Padding(
-                            padding: const EdgeInsets.only(
-                              top: 20,
-                            ),
-                            child: Text(
-                              'A continuación debes ingresar cierta información básica para que tu nodo pueda transmitir la información que sensa',
-                              textAlign: TextAlign.center,
-                            ),
-                          ))
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.all(20.0),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Selecciona a que grupo de sensores va a pertenecer tu nodo',
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                fontSize: 20,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Flexible(
-                              child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 20,
-                                    bottom: 40,
-                                  ),
-                                  child: DropdownButton<Organization>(
-                                    value: dropdownValue,
-                                    icon: const Icon(Icons.arrow_downward),
-                                    iconSize: 24,
-                                    elevation: 16,
-                                    style: const TextStyle(
-                                        color: Colors.deepPurple),
-                                    underline: Container(
-                                      height: 2,
-                                      color: Colors.deepPurpleAccent,
-                                    ),
-                                    onChanged: (Organization? newValue) {
-                                      setState(() {
-                                        dropdownValue = newValue!;
-                                        device.organization = dropdownValue!.id;
-                                      });
-                                    },
-                                    items: organizations!
-                                        .map<DropdownMenuItem<Organization>>(
-                                            (Organization value) {
-                                      return DropdownMenuItem<Organization>(
-                                        value: value,
-                                        child: Text(value.name),
-                                      );
-                                    }).toList(),
-                                  )))
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Selecciona las variables a sensar',
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                fontSize: 20,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: 70,
-                            child: ElevatedButton(
-                              style: ButtonStyle(
-                                  shape: MaterialStateProperty.all<
-                                          RoundedRectangleBorder>(
-                                      RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25.0),
-                              ))),
-                              onPressed: _createVariable,
-                              child: Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 30.0,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Flexible(
-                              child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 20,
-                                    bottom: 40,
-                                  ),
-                                  child: SizedBox(
-                                      height: 25.0 * variables!.length,
-                                      child: GridView.count(
-                                          shrinkWrap: true,
-                                          childAspectRatio: 4,
-                                          physics:
-                                              NeverScrollableScrollPhysics(),
-                                          crossAxisCount: 2,
-                                          children: variables!
-                                              .map((e) => Container(
-                                                    child: Row(
-                                                      children: [
-                                                        Checkbox(
-                                                          checkColor:
-                                                              Colors.white,
-                                                          value: e.isActive,
-                                                          onChanged:
-                                                              (bool? value) {
-                                                            setState(() {
-                                                              e.isActive =
-                                                                  value!;
-                                                            });
-                                                          },
-                                                        ),
-                                                        Text(
-                                                            "${e.name}[${e.unit}]")
-                                                      ],
-                                                    ),
-                                                  ))
-                                              .toList()))
-
-                                  // Row(
-                                  //   children: [
-                                  //     Column(
-                                  //       children: [
-                                  //         Padding(
-                                  //           padding: const EdgeInsets.all(10),
-                                  //           child: Row(
-                                  //             children: [
-                                  //               Checkbox(
-                                  //                 checkColor: Colors.white,
-                                  //                 value: isChecked,
-                                  //                 onChanged: (bool? value) {
-                                  //                   setState(() {
-                                  //                     isChecked = value!;
-                                  //                   });
-                                  //                 },
-                                  //               ),
-                                  //               Text('datamuylarga')
-                                  //             ],
-                                  //           ),
-                                  //         )
-                                  //       ],
-                                  //     ),
-                                  //     Column(
-                                  //       children: [
-                                  //         Padding(
-                                  //           padding: const EdgeInsets.all(10),
-                                  //           child: Row(
-                                  //             children: [
-                                  //               Checkbox(
-                                  //                 checkColor: Colors.white,
-                                  //                 value: isChecked,
-                                  //                 onChanged: (bool? value) {
-                                  //                   setState(() {
-                                  //                     isChecked = value!;
-                                  //                   });
-                                  //                 },
-                                  //               ),
-                                  //               Text('datamuylarga')
-                                  //             ],
-                                  //           ),
-                                  //         )
-                                  //       ],
-                                  //     ),
-                                  //   ],
-                                  // ))),
-                                  ))
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Selecciona el tipo de dispositivo que vas a utilizar',
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                fontSize: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Flexible(
-                              child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 20,
-                                    bottom: 40,
-                                  ),
-                                  child: DropdownButton<String>(
-                                    value: dropdownValue2,
-                                    icon: const Icon(Icons.arrow_downward),
-                                    iconSize: 24,
-                                    elevation: 16,
-                                    style: const TextStyle(
-                                        color: Colors.deepPurple),
-                                    underline: Container(
-                                      height: 2,
-                                      color: Colors.deepPurpleAccent,
-                                    ),
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        dropdownValue2 = newValue!;
-                                        device.type =
-                                            (dropdownValue2 == 'Estático'
-                                                ? 'static'
-                                                : 'mobile');
-                                      });
-                                    },
-                                    items: <String>[
-                                      'Estático',
-                                      'Dinámico',
-                                    ].map<DropdownMenuItem<String>>(
-                                        (String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
-                                  )))
-                        ],
-                      ),
-                      dropdownValue2 == 'Dinámico'
-                          ? Container()
-                          : Row(
+                      Container(
+                        margin: const EdgeInsets.all(50.0),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 Flexible(
                                   child: Text(
-                                    'Define la ubicación de tu dispositivo.',
+                                    'Configuración inicial de nodo sensor',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 37,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 20,
+                                  ),
+                                  child: Text(
+                                    'A continuación debes ingresar cierta información básica para que tu nodo pueda transmitir la información que sensa',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ))
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.all(20.0),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Selecciona a que grupo de sensores va a pertenecer tu nodo',
                                     textAlign: TextAlign.left,
                                     style: TextStyle(
                                       fontSize: 20,
@@ -399,103 +199,431 @@ class _NewDeviceState extends State<NewDevice> {
                                 )
                               ],
                             ),
-                      dropdownValue2 == 'Dinámico'
-                          ? Container()
-                          : FutureBuilder<Position>(
-                              future:
-                                  _determinePosition(), // a previously-obtained Future<String> or null
-                              builder: (BuildContext context,
-                                  AsyncSnapshot<Position> snapshot) {
-                                Widget child;
-                                if (snapshot.hasData) {
-                                  child = Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Container(
-                                        height: 310,
-                                        width: 310,
-                                        child: GoogleMap(
-                                            gestureRecognizers: <
-                                                Factory<
-                                                    OneSequenceGestureRecognizer>>[
-                                              new Factory<
-                                                  OneSequenceGestureRecognizer>(
-                                                () =>
-                                                    new EagerGestureRecognizer(),
-                                              ),
-                                            ].toSet(),
-                                            mapType: MapType.normal,
-                                            myLocationEnabled: true,
-                                            markers: [
-                                              Marker(
-                                                markerId: MarkerId("1"),
-                                                position:
-                                                    LatLng(latitude, longitude),
-                                              )
-                                            ].toSet(),
-                                            onCameraMove: (object) => {
-                                                  setState(() {
-                                                    latitude =
-                                                        object.target.latitude;
-                                                    longitude =
-                                                        object.target.longitude;
-                                                    device.lat = latitude;
-                                                    device.long = longitude;
-                                                  })
-                                                },
-                                            initialCameraPosition:
-                                                CameraPosition(
-                                              target: LatLng(
-                                                  snapshot.data!.latitude,
-                                                  snapshot.data!.longitude),
-                                              zoom: 14.4746,
-                                            ),
-                                            onMapCreated: (GoogleMapController
-                                                controller) {
-                                              _controller.complete(controller);
-                                            }),
-                                      ),
-                                    ],
-                                  );
-                                  ;
-                                } else if (snapshot.hasError) {
-                                  child = Padding(
-                                    padding: const EdgeInsets.only(top: 16),
-                                    child: Text('Error: ${snapshot.error}'),
-                                  );
-                                } else {
-                                  child = SizedBox(
-                                    child: CircularProgressIndicator(),
-                                    width: 60,
-                                    height: 60,
-                                  );
-                                }
-                                return Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(20),
-                                    child: child,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 20,
+                                          bottom: 40,
+                                        ),
+                                        child: DropdownButton<Organization>(
+                                          value: dropdownValue,
+                                          icon:
+                                              const Icon(Icons.arrow_downward),
+                                          iconSize: 24,
+                                          elevation: 16,
+                                          style: const TextStyle(
+                                              color: Colors.deepPurple),
+                                          underline: Container(
+                                            height: 2,
+                                            color: Colors.deepPurpleAccent,
+                                          ),
+                                          onChanged: (Organization? newValue) {
+                                            setState(() {
+                                              dropdownValue = newValue!;
+                                              device.organization =
+                                                  dropdownValue!.id;
+                                            });
+                                          },
+                                          items: organizations!.map<
+                                                  DropdownMenuItem<
+                                                      Organization>>(
+                                              (Organization value) {
+                                            return DropdownMenuItem<
+                                                Organization>(
+                                              value: value,
+                                              child: Text(value.name),
+                                            );
+                                          }).toList(),
+                                        )))
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Selecciona las variables a sensar',
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                    ),
                                   ),
-                                );
-                              },
+                                ),
+                                Container(
+                                  width: 70,
+                                  child: ElevatedButton(
+                                    style: ButtonStyle(
+                                        shape: MaterialStateProperty.all<
+                                                RoundedRectangleBorder>(
+                                            RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(25.0),
+                                    ))),
+                                    onPressed: _createVariable,
+                                    child: Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 30.0,
+                                    ),
+                                  ),
+                                )
+                              ],
                             ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Flexible(
-                            child: ElevatedButton(
-                              onPressed: _submit,
-                              child: Text('Finalizar'),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 20,
+                                          bottom: 40,
+                                        ),
+                                        child: SizedBox(
+                                            height: 25.0 * variables!.length,
+                                            child: GridView.count(
+                                                shrinkWrap: true,
+                                                childAspectRatio: 4,
+                                                physics:
+                                                    NeverScrollableScrollPhysics(),
+                                                crossAxisCount: 2,
+                                                children: variables!
+                                                    .map((e) => Container(
+                                                          child: Row(
+                                                            children: [
+                                                              Checkbox(
+                                                                checkColor:
+                                                                    Colors
+                                                                        .white,
+                                                                value:
+                                                                    e.isActive,
+                                                                onChanged:
+                                                                    (bool?
+                                                                        value) {
+                                                                  setState(() {
+                                                                    e.isActive =
+                                                                        value!;
+                                                                  });
+                                                                },
+                                                              ),
+                                                              Text(
+                                                                  "${e.name}[${e.unit}]")
+                                                            ],
+                                                          ),
+                                                        ))
+                                                    .toList()))
+
+                                        // Row(
+                                        //   children: [
+                                        //     Column(
+                                        //       children: [
+                                        //         Padding(
+                                        //           padding: const EdgeInsets.all(10),
+                                        //           child: Row(
+                                        //             children: [
+                                        //               Checkbox(
+                                        //                 checkColor: Colors.white,
+                                        //                 value: isChecked,
+                                        //                 onChanged: (bool? value) {
+                                        //                   setState(() {
+                                        //                     isChecked = value!;
+                                        //                   });
+                                        //                 },
+                                        //               ),
+                                        //               Text('datamuylarga')
+                                        //             ],
+                                        //           ),
+                                        //         )
+                                        //       ],
+                                        //     ),
+                                        //     Column(
+                                        //       children: [
+                                        //         Padding(
+                                        //           padding: const EdgeInsets.all(10),
+                                        //           child: Row(
+                                        //             children: [
+                                        //               Checkbox(
+                                        //                 checkColor: Colors.white,
+                                        //                 value: isChecked,
+                                        //                 onChanged: (bool? value) {
+                                        //                   setState(() {
+                                        //                     isChecked = value!;
+                                        //                   });
+                                        //                 },
+                                        //               ),
+                                        //               Text('datamuylarga')
+                                        //             ],
+                                        //           ),
+                                        //         )
+                                        //       ],
+                                        //     ),
+                                        //   ],
+                                        // ))),
+                                        ))
+                              ],
                             ),
-                          ),
-                        ],
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Selecciona el tipo de dispositivo que vas a utilizar',
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 20,
+                                          bottom: 40,
+                                        ),
+                                        child: DropdownButton<String>(
+                                          value: dropdownValue2,
+                                          icon:
+                                              const Icon(Icons.arrow_downward),
+                                          iconSize: 24,
+                                          elevation: 16,
+                                          style: const TextStyle(
+                                              color: Colors.deepPurple),
+                                          underline: Container(
+                                            height: 2,
+                                            color: Colors.deepPurpleAccent,
+                                          ),
+                                          onChanged: (String? newValue) {
+                                            setState(() {
+                                              dropdownValue2 = newValue!;
+                                              device.type =
+                                                  (dropdownValue2 == 'Estático'
+                                                      ? 'static'
+                                                      : 'mobile');
+                                            });
+                                          },
+                                          items: <String>[
+                                            'Estático',
+                                            'Dinámico',
+                                          ].map<DropdownMenuItem<String>>(
+                                              (String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                        )))
+                              ],
+                            ),
+                            dropdownValue2 == 'Dinámico'
+                                ? Container()
+                                : Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          'Define la ubicación de tu dispositivo.',
+                                          textAlign: TextAlign.left,
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                            dropdownValue2 == 'Dinámico'
+                                ? Container()
+                                : FutureBuilder<Position>(
+                                    future:
+                                        _determinePosition(), // a previously-obtained Future<String> or null
+                                    builder: (BuildContext context,
+                                        AsyncSnapshot<Position> snapshot) {
+                                      Widget child;
+                                      if (snapshot.hasData) {
+                                        child = Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            Container(
+                                              height: 310,
+                                              width: 310,
+                                              child: GoogleMap(
+                                                  gestureRecognizers: <
+                                                      Factory<
+                                                          OneSequenceGestureRecognizer>>[
+                                                    new Factory<
+                                                        OneSequenceGestureRecognizer>(
+                                                      () =>
+                                                          new EagerGestureRecognizer(),
+                                                    ),
+                                                  ].toSet(),
+                                                  mapType: MapType.normal,
+                                                  myLocationEnabled: true,
+                                                  markers: [
+                                                    Marker(
+                                                      markerId: MarkerId("1"),
+                                                      position: LatLng(
+                                                          latitude, longitude),
+                                                    )
+                                                  ].toSet(),
+                                                  onCameraMove: (object) => {
+                                                        setState(() {
+                                                          latitude = object
+                                                              .target.latitude;
+                                                          longitude = object
+                                                              .target.longitude;
+                                                          device.lat = latitude;
+                                                          device.long =
+                                                              longitude;
+                                                        })
+                                                      },
+                                                  initialCameraPosition:
+                                                      CameraPosition(
+                                                    target: LatLng(
+                                                        snapshot.data!.latitude,
+                                                        snapshot
+                                                            .data!.longitude),
+                                                    zoom: 14.4746,
+                                                  ),
+                                                  onMapCreated:
+                                                      (GoogleMapController
+                                                          controller) {
+                                                    _controller
+                                                        .complete(controller);
+                                                  }),
+                                            ),
+                                          ],
+                                        );
+                                        ;
+                                      } else if (snapshot.hasError) {
+                                        child = Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 16),
+                                          child:
+                                              Text('Error: ${snapshot.error}'),
+                                        );
+                                      } else {
+                                        child = SizedBox(
+                                          child: CircularProgressIndicator(),
+                                          width: 60,
+                                          height: 60,
+                                        );
+                                      }
+                                      return Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(20),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Selecciona la red Wi-Fi de tu nodo',
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 20,
+                                          bottom: 40,
+                                        ),
+                                        child: DropdownButton<WifiNetwork>(
+                                          value: dropdownValueWifi,
+                                          icon:
+                                              const Icon(Icons.arrow_downward),
+                                          iconSize: 24,
+                                          elevation: 16,
+                                          style: const TextStyle(
+                                              color: Colors.deepPurple),
+                                          underline: Container(
+                                            height: 2,
+                                            color: Colors.deepPurpleAccent,
+                                          ),
+                                          onChanged: (WifiNetwork? newValue) {
+                                            setState(() {
+                                              dropdownValueWifi = newValue!;
+                                              device.wifiSSID =
+                                                  dropdownValueWifi!.ssid!;
+                                            });
+                                          },
+                                          items: wifiNetworks!.map<
+                                                  DropdownMenuItem<
+                                                      WifiNetwork>>(
+                                              (WifiNetwork value) {
+                                            return DropdownMenuItem<
+                                                WifiNetwork>(
+                                              value: value,
+                                              child: Text("${value.ssid}"),
+                                            );
+                                          }).toList(),
+                                        )))
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Ingresa la contraseña de la red Wi-Fi',
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 20,
+                                          bottom: 40,
+                                          left: 50,
+                                          right: 50,
+                                        ),
+                                        child: TextField(
+                                          onChanged: (value) => {
+                                            setState(() {
+                                              device.wifiPASS = value;
+                                            })
+                                          },
+                                          obscureText: true,
+                                        )))
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                  child: ElevatedButton(
+                                    onPressed: _submit,
+                                    child: Text('Finalizar'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
+                  )),
                 ),
-              ],
-            )),
-          ),
-        ));
+              ));
   }
 }

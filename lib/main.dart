@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'views/BTConnection.dart';
 import 'views/MainPage.dart';
 import 'views/NewDevice.dart';
 
@@ -74,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: NewDevice(),
+      home: BTConection(),
     );
   }
 }

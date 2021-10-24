@@ -12,7 +12,10 @@ class HttpService {
   final deviceResource = '/device';
   final variableResource = '/variable';
   Future<List<Organization>> getOrganizations() async {
-    final response = await get(Uri.parse(IP + orgResource));
+    debugPrint("hfwjkh");
+
+    final uri = Uri.http(IP, orgResource);
+    final response = await get(uri);
     if (response.statusCode == 200) {
       return Organization.getOrganizations(jsonDecode(response.body) as List);
     } else {
@@ -21,7 +24,8 @@ class HttpService {
   }
 
   Future<List<Variable>> getVariables() async {
-    final response = await get(Uri.parse(IP + variableResource));
+    final uri = Uri.http(IP, variableResource);
+    final response = await get(uri);
     if (response.statusCode == 200) {
       return Variable.getVariables(jsonDecode(response.body) as List);
     } else {
@@ -43,7 +47,7 @@ class HttpService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body)[0]['id'] as int;
     } else {
-      throw Exception('Failed to load variables');
+      throw Exception('Failed to post device');
     }
   }
 }
