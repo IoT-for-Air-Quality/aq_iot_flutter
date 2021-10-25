@@ -1,8 +1,10 @@
 import 'package:aq_iot_flutter/models/Organization.dart';
 import 'package:aq_iot_flutter/models/Variable.dart';
+import 'package:aq_iot_flutter/services/BluetoothService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,7 +15,8 @@ import 'ManageDevice.dart';
 import 'package:wifi_iot/wifi_iot.dart';
 
 class NewDevice extends StatefulWidget {
-  NewDevice({Key? key}) : super(key: key);
+  final String deviceID;
+  const NewDevice(this.deviceID);
 
   @override
   _NewDeviceState createState() => _NewDeviceState();
@@ -38,10 +41,30 @@ class _NewDeviceState extends State<NewDevice> {
     HttpService().postDevice(device).then(
       (value) {
         device.id = value;
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => ManageDevice(device)));
+        writeCharacteristic(
+                Uuid.parse("00002A23-0000-1000-8000-00805F9B34FB"), device.id)
+            .then((value) => {
+                  writeCharacteristic(
+                          Uuid.parse("00003000-0000-1000-8000-00805F9B34FB"),
+                          device.wifiSSID)
+                      .then((value) => writeCharacteristic(
+                              Uuid.parse(
+                                  "00003001-0000-1000-8000-00805F9B34FB"),
+                              device.wifiPASS)
+                          .then((value) => Navigator.of(context)
+                              .pushReplacement(MaterialPageRoute(
+                                  builder: (context) => ManageDevice(device)))))
+                });
       },
     );
+  }
+
+  Future<void> writeCharacteristic(characteristicID, id) async {
+    final characteristic = QualifiedCharacteristic(
+        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+        characteristicId: characteristicID,
+        deviceId: widget.deviceID);
+    return await BluetoothService().writeSlow(characteristic, "$id");
   }
 
   Future<List<WifiNetwork>> loadWifiList() async {
