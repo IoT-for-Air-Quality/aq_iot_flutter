@@ -50,11 +50,12 @@ class _BTConectionSate extends State<BTConection> {
   List<DiscoveredDevice> devices = [];
   DiscoveredDevice? device;
   Stream<DiscoveredDevice> streamDevices = BluetoothService().getDevices();
+  StreamSubscription<DiscoveredDevice>? subscription;
   @override
   void initState() {
     super.initState();
 
-    streamDevices.listen((event) {
+    subscription = streamDevices.listen((event) {
       setState(() {
         var contain = devices.where((element) => element.id == event.id);
         if (contain.isEmpty) {
@@ -158,12 +159,44 @@ class _BTConectionSate extends State<BTConection> {
     return await BluetoothService().readCharacteristic(characteristic);
   }
 
-  dynamic getFullCharacteristics() async {
-    final characteristic = QualifiedCharacteristic(
-        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
-        characteristicId: Uuid.parse("00002A23-0000-1000-8000-00805F9B34FB"),
-        deviceId: device!.id);
-    return await BluetoothService().readCharacteristic(characteristic);
+  Future<bool> getFullCharacteristics() async {
+    //Device type
+
+    nodeSensor.type = await BluetoothService().readCharacteristic(
+        QualifiedCharacteristic(
+            serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+            characteristicId:
+                Uuid.parse("00003000-0000-1000-8000-00805F9B34FB"),
+            deviceId: device!.id));
+    // nodeSensor.swVersion = await BluetoothService().readCharacteristic(
+    //     QualifiedCharacteristic(
+    //         serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+    //         characteristicId:
+    //             Uuid.parse("00002A28-0000-1000-8000-00805F9B34FB"),
+    //         deviceId: device!.id));
+
+    nodeSensor.lat = double.parse(await BluetoothService().readCharacteristic(
+        QualifiedCharacteristic(
+            serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+            characteristicId:
+                Uuid.parse("00002AAE-0000-1000-8000-00805F9B34FB"),
+            deviceId: device!.id)));
+
+    nodeSensor.long = double.parse(await BluetoothService().readCharacteristic(
+        QualifiedCharacteristic(
+            serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+            characteristicId:
+                Uuid.parse("00002AAF-0000-1000-8000-00805F9B34FB"),
+            deviceId: device!.id)));
+
+    nodeSensor.wifiSSID = await BluetoothService().readCharacteristic(
+        QualifiedCharacteristic(
+            serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+            characteristicId:
+                Uuid.parse("00003001-0000-1000-8000-00805F9B34FB"),
+            deviceId: device!.id));
+
+    return true;
   }
 
   Device nodeSensor = new Device(
@@ -174,24 +207,36 @@ class _BTConectionSate extends State<BTConection> {
       organization: 0,
       display: false,
       wifiSSID: '',
-      wifiPASS: '');
+      wifiPASS: '',
+      swVersion: '');
   void _connect() async {
-    debugPrint("hola");
+    if (device == null) {
+      return null;
+    }
     List<Uuid> characteristics = [];
     characteristics.add(Uuid.parse("00002A23-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00002AAE-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00002AAF-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00002A28-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00003000-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00003001-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00003002-0000-1000-8000-00805F9B34FB"));
+
     BluetoothService().connectDevice(device!.id, {
       Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"): characteristics
     }).listen((event) async {
       if (event.connectionState == DeviceConnectionState.connected) {
         debugPrint("ID:");
-        nodeSensor.id =
-            int.parse(new String.fromCharCodes(await getCharacteristicID()));
+        nodeSensor.id = int.parse(await getCharacteristicID());
         debugPrint("ID:${nodeSensor.id}");
         if (nodeSensor.id == 0) {
+          await subscription!.cancel();
           Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (context) => NewDevice(device!.id)));
         } else {
-          await getFullCharacteristics();
+          debugPrint("Previous");
+          // await getFullCharacteristics();
+          await subscription!.cancel();
           Navigator.of(context).pushReplacement(MaterialPageRoute(
               builder: (context) => ManageDevice(nodeSensor)));
         }

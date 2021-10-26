@@ -31,7 +31,8 @@ class _NewDeviceState extends State<NewDevice> {
       long: 0,
       display: false,
       wifiSSID: '',
-      wifiPASS: '');
+      wifiPASS: '',
+      swVersion: '');
   double latitude = 0;
   double longitude = 0;
 
@@ -45,15 +46,11 @@ class _NewDeviceState extends State<NewDevice> {
                 Uuid.parse("00002A23-0000-1000-8000-00805F9B34FB"), device.id)
             .then((value) => {
                   writeCharacteristic(
-                          Uuid.parse("00003000-0000-1000-8000-00805F9B34FB"),
+                          Uuid.parse("00003001-0000-1000-8000-00805F9B34FB"),
                           device.wifiSSID)
-                      .then((value) => writeCharacteristic(
-                              Uuid.parse(
-                                  "00003001-0000-1000-8000-00805F9B34FB"),
-                              device.wifiPASS)
-                          .then((value) => Navigator.of(context)
-                              .pushReplacement(MaterialPageRoute(
-                                  builder: (context) => ManageDevice(device)))))
+                      .then((value) => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                              builder: (context) => ManageDevice(device))))
                 });
       },
     );

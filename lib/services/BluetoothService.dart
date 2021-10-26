@@ -20,8 +20,10 @@ class BluetoothService {
     );
   }
 
-  readCharacteristic(QualifiedCharacteristic characteristic) {
-    return flutterReactiveBle.readCharacteristic(characteristic);
+  Future<String> readCharacteristic(
+      QualifiedCharacteristic characteristic) async {
+    return new String.fromCharCodes(
+        await flutterReactiveBle.readCharacteristic(characteristic));
   }
 
   Future<void> writeSlow(QualifiedCharacteristic characteristic, String value) {

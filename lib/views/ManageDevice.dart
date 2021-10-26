@@ -318,7 +318,7 @@ class _ManageDeviceState extends State<ManageDevice> {
 
   void startRoute() {
     setState(() {
-      inRoute = true;
+      inRoute = !inRoute;
     });
   }
 
@@ -541,7 +541,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.spaceAround,
                                             children: [
-                                              Text("IP broker"),
+                                              Text("Node type"),
                                               Container(
                                                 width: 200,
                                                 height: 25,
@@ -562,7 +562,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                                                           labelText:
                                                               "ip broker",
                                                         ))
-                                                    : Text(ipBroker),
+                                                    : Text(widget.device.type),
                                               )
                                             ],
                                           ),
@@ -683,7 +683,9 @@ class _ManageDeviceState extends State<ManageDevice> {
                             child: Column(
                                 children: mobile
                                     ? [
-                                        inRoute ? DeviceRoute() : Container(),
+                                        inRoute
+                                            ? DeviceRoute(widget.device)
+                                            : Container(),
                                         ElevatedButton(
                                             style: ButtonStyle(
                                                 shape: MaterialStateProperty.all<
@@ -693,7 +695,9 @@ class _ManageDeviceState extends State<ManageDevice> {
                                                   BorderRadius.circular(25.0),
                                             ))),
                                             onPressed: () => {startRoute()},
-                                            child: Text("Iniciar ruta"))
+                                            child: inRoute
+                                                ? Text("Cerrar ruta")
+                                                : Text("Iniciar ruta"))
                                       ]
                                     : []),
                           )
@@ -739,6 +743,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                               margin: EdgeInsets.all(20),
                               child: Column(
                                 children: [
+                                  Text(widget.device.swVersion),
                                   Text("No hay actualizaciones disponibles")
                                 ],
                               ))

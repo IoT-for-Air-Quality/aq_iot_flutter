@@ -7,16 +7,19 @@ class Device {
   bool display;
   String wifiSSID;
   String wifiPASS;
+  String swVersion;
 
-  Device(
-      {required this.id,
-      required this.lat,
-      required this.long,
-      required this.type,
-      required this.organization,
-      required this.display,
-      required this.wifiSSID,
-      required this.wifiPASS});
+  Device({
+    required this.id,
+    required this.lat,
+    required this.long,
+    required this.type,
+    required this.organization,
+    required this.display,
+    required this.wifiSSID,
+    required this.wifiPASS,
+    required this.swVersion,
+  });
 
   factory Device.fromJson(Map<String, dynamic> json) {
     return Device(
@@ -27,6 +30,7 @@ class Device {
         organization: json['organization'],
         display: json['display'],
         wifiSSID: '',
-        wifiPASS: '');
+        wifiPASS: '',
+        swVersion: '');
   }
 }

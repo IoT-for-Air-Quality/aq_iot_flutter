@@ -1,16 +1,16 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'package:aq_iot_flutter/models/Device.dart';
+import 'package:aq_iot_flutter/services/HttpService.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'package:mqtt_client/mqtt_client.dart';
 
-import 'package:mqtt_client/mqtt_server_client.dart';
 import '../managers/MQTTManager.dart';
 
 class DeviceRoute extends StatefulWidget {
-  DeviceRoute({Key? key}) : super(key: key);
-
+  final Device device;
+  const DeviceRoute(this.device);
   @override
   _DeviceRouteState createState() => _DeviceRouteState();
 }
@@ -28,9 +28,6 @@ class _DeviceRouteState extends State<DeviceRoute> {
   StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   bool positionStreamStarted = false;
   MQTTManager manager = MQTTManager(host: "35.237.59.165", identifier: "Yo");
-
-  static const topicLat = 'AQ/ESP32/LAT';
-  static const topicLon = 'AQ/ESP32/LON';
 
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
@@ -71,27 +68,36 @@ class _DeviceRouteState extends State<DeviceRoute> {
 
   late Timer timer;
   int counter = 0;
+
+  int? idRoute;
   @override
   void initState() {
+    final int seconds = 5;
     super.initState();
 
     manager.initializeMQTTClient();
     manager.connect();
-    timer = Timer.periodic(Duration(seconds: 10), (Timer t) => addValue());
+    HttpService().postRoute(widget.device.id, seconds * 100).then((value) {
+      setState(() {
+        idRoute = value;
+      });
+      timer = Timer.periodic(
+          Duration(seconds: seconds), (Timer t) => addValue(value));
+    });
   }
 
-  void addValue() {
-    pubData();
+  void addValue(int idRoute) {
+    pubData(idRoute);
     setState(() {
       counter++;
     });
   }
 
-  void pubData() {
+  void pubData(int idRoute) {
     _determinePosition().then((value) {
       if (manager.getConnStatus().state == MqttConnectionState.connected) {
-        manager.publish(value.latitude.toString(), topicLat);
-        manager.publish(value.longitude.toString(), topicLon);
+        manager.publish("${value.latitude}&${value.longitude}",
+            'AQ/RoutePoint/$idRoute/Lat&Long');
       }
     });
   }
@@ -100,6 +106,15 @@ class _DeviceRouteState extends State<DeviceRoute> {
   void dispose() {
     timer.cancel();
     super.dispose();
+  }
+
+  void _endRoute() async {
+    HttpService().endRoute(idRoute!).then((value) {
+      timer.cancel();
+      return true;
+    }).catchError((e) {
+      return false;
+    });
   }
 
   @override
@@ -123,9 +138,17 @@ class _DeviceRouteState extends State<DeviceRoute> {
                         Text("Longitud"),
                         Text("${snapshot.data!.longitude}")
                       ]),
-                      Row(children: [Text("Longitud"), Text("${counter}")]),
                       ElevatedButton(
-                          onPressed: () => {pubData()}, child: Text("hola"))
+                          onPressed: () {
+                            _endRoute();
+                          },
+                          style: ButtonStyle(
+                              shape: MaterialStateProperty.all<
+                                      RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25.0),
+                          ))),
+                          child: Text('Finalizar ruta'))
                     ],
                   );
                 } else

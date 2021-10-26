@@ -722,7 +722,7 @@ class _MainPage extends State<MainPage> {
                       child: Column(
                           children: mobile
                               ? [
-                                  inRoute ? DeviceRoute() : Container(),
+                                  inRoute ? Container() : Container(),
                                   ElevatedButton(
                                       style: ButtonStyle(
                                           shape: MaterialStateProperty.all<
