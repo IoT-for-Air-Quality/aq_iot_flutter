@@ -681,25 +681,8 @@ class _ManageDeviceState extends State<ManageDevice> {
                           Container(
                             margin: EdgeInsets.all(20),
                             child: Column(
-                                children: mobile
-                                    ? [
-                                        inRoute
-                                            ? DeviceRoute(widget.device)
-                                            : Container(),
-                                        ElevatedButton(
-                                            style: ButtonStyle(
-                                                shape: MaterialStateProperty.all<
-                                                        RoundedRectangleBorder>(
-                                                    RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(25.0),
-                                            ))),
-                                            onPressed: () => {startRoute()},
-                                            child: inRoute
-                                                ? Text("Cerrar ruta")
-                                                : Text("Iniciar ruta"))
-                                      ]
-                                    : []),
+                                children:
+                                    mobile ? [DeviceRoute(widget.device)] : []),
                           )
                         ],
                       ),

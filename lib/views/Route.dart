@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:aq_iot_flutter/models/Device.dart';
 import 'package:aq_iot_flutter/services/HttpService.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:mqtt_client/mqtt_client.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
 import '../managers/MQTTManager.dart';
 
@@ -28,6 +32,8 @@ class _DeviceRouteState extends State<DeviceRoute> {
   StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   bool positionStreamStarted = false;
   MQTTManager manager = MQTTManager(host: "35.237.59.165", identifier: "Yo");
+
+  Completer<GoogleMapController> _controller = Completer();
 
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
@@ -68,37 +74,51 @@ class _DeviceRouteState extends State<DeviceRoute> {
 
   late Timer timer;
   int counter = 0;
-
+  late BitmapDescriptor pinLocationIcon;
   int? idRoute;
+  bool? onRoute;
+  final int seconds = 5;
   @override
   void initState() {
-    final int seconds = 5;
+    BitmapDescriptor.fromAssetImage(
+            ImageConfiguration(devicePixelRatio: 2.5), 'assets/morado.png')
+        .then((onValue) {
+      pinLocationIcon = onValue;
+    });
     super.initState();
 
     manager.initializeMQTTClient();
     manager.connect();
-    HttpService().postRoute(widget.device.id, seconds * 100).then((value) {
-      setState(() {
-        idRoute = value;
-      });
-      timer = Timer.periodic(
-          Duration(seconds: seconds), (Timer t) => addValue(value));
+    setState(() {
+      onRoute = false;
     });
   }
 
-  void addValue(int idRoute) {
-    pubData(idRoute);
+  void addValue() {
     setState(() {
+      pubData();
       counter++;
     });
   }
 
-  void pubData(int idRoute) {
-    _determinePosition().then((value) {
+  List<Position> positions = [];
+
+  void pubData() {
+    _determinePosition().then((value) async {
+      debugPrint("HOLAAA");
       if (manager.getConnStatus().state == MqttConnectionState.connected) {
+        debugPrint("Estoy conectadooo");
         manager.publish("${value.latitude}&${value.longitude}",
             'AQ/RoutePoint/$idRoute/Lat&Long');
       }
+      final GoogleMapController controller = await _controller.future;
+      setState(() {
+        debugPrint("$value");
+        positions.add(value);
+
+        controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+            zoom: 17.476, target: LatLng(value.latitude, value.longitude))));
+      });
     });
   }
 
@@ -108,9 +128,52 @@ class _DeviceRouteState extends State<DeviceRoute> {
     super.dispose();
   }
 
+  void _newRoute() {
+    HttpService().postRoute(widget.device.id, seconds * 100).then((value) {
+      setState(() {
+        positions = [];
+        onRoute = true;
+        idRoute = value;
+      });
+      timer =
+          Timer.periodic(Duration(seconds: seconds), (Timer t) => addValue());
+    });
+  }
+
   void _endRoute() async {
-    HttpService().endRoute(idRoute!).then((value) {
+    HttpService().endRoute(idRoute!).then((value) async {
       timer.cancel();
+      final GoogleMapController controller = await _controller.future;
+
+      double sumLat = 0;
+      double sumLong = 0;
+
+      double minLat = positions[0].latitude;
+      double minLong = positions[0].longitude;
+      double maxLat = positions[0].latitude;
+      double maxLong = positions[0].longitude;
+      positions.forEach((point) {
+        if (point.latitude < minLat) minLat = point.latitude;
+        if (point.latitude > maxLat) maxLat = point.latitude;
+        if (point.longitude < minLong) minLong = point.longitude;
+        if (point.longitude > maxLong) maxLong = point.longitude;
+      });
+      double dist = max(
+          (pow(positions[0].latitude, 2).toDouble() -
+                  pow(positions[positions.length - 1].latitude, 2).toDouble())
+              .abs(),
+          (pow(positions[0].longitude, 2).toDouble() -
+                  pow(positions[positions.length - 1].longitude, 2).toDouble())
+              .abs());
+      debugPrint("$dist");
+      controller.animateCamera((CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+              southwest: LatLng(minLat - 0.0005, minLong - 0.0005),
+              northeast: LatLng(maxLat + 0.0005, maxLong + 0.0005)),
+          20)));
+      setState(() {
+        onRoute = false;
+      });
       return true;
     }).catchError((e) {
       return false;
@@ -121,40 +184,95 @@ class _DeviceRouteState extends State<DeviceRoute> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text("$counter"),
+        Text("Route: $idRoute"),
         Container(
-          child: FutureBuilder<Position>(
-              future: _determinePosition(),
+            child: Column(
+          children: [
+            FutureBuilder<Position>(
+              future:
+                  _determinePosition(), // a previously-obtained Future<String> or null
               builder:
                   (BuildContext context, AsyncSnapshot<Position> snapshot) {
+                Widget child;
                 if (snapshot.hasData) {
-                  return Column(
+                  child = Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Row(children: [
-                        Text("Latitud"),
-                        Text("${snapshot.data!.latitude}")
-                      ]),
-                      Row(children: [
-                        Text("Longitud"),
-                        Text("${snapshot.data!.longitude}")
-                      ]),
-                      ElevatedButton(
-                          onPressed: () {
-                            _endRoute();
-                          },
-                          style: ButtonStyle(
-                              shape: MaterialStateProperty.all<
-                                      RoundedRectangleBorder>(
-                                  RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25.0),
-                          ))),
-                          child: Text('Finalizar ruta'))
+                      Container(
+                        height: 310,
+                        width: 280,
+                        child: GoogleMap(
+                            gestureRecognizers:
+                                <Factory<OneSequenceGestureRecognizer>>[
+                              new Factory<OneSequenceGestureRecognizer>(
+                                () => new EagerGestureRecognizer(),
+                              ),
+                            ].toSet(),
+                            mapType: MapType.normal,
+                            polylines: [
+                              Polyline(
+                                  polylineId: PolylineId(''),
+                                  points: positions
+                                      .map((e) =>
+                                          LatLng(e.latitude, e.longitude))
+                                      .toList())
+                            ].toSet(),
+                            markers: positions
+                                .map((e) => Marker(
+                                    icon: pinLocationIcon,
+                                    markerId: MarkerId(e.timestamp.toString()),
+                                    position: LatLng(e.latitude, e.longitude)))
+                                .toSet(),
+                            myLocationEnabled: true,
+                            initialCameraPosition: CameraPosition(
+                              target: LatLng(snapshot.data!.latitude,
+                                  snapshot.data!.longitude),
+                              zoom: 17.4746,
+                            ),
+                            onMapCreated: (GoogleMapController controller) {
+                              _controller.complete(controller);
+                            }),
+                      ),
                     ],
                   );
-                } else
-                  return Container();
-              }),
-        )
+                  ;
+                } else if (snapshot.hasError) {
+                  child = Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                } else {
+                  child = SizedBox(
+                    child: CircularProgressIndicator(),
+                    width: 60,
+                    height: 60,
+                  );
+                }
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: child,
+                  ),
+                );
+              },
+            ),
+            ElevatedButton(
+                onPressed: () {
+                  if (onRoute!) {
+                    _endRoute();
+                  } else {
+                    _newRoute();
+                  }
+                },
+                style: ButtonStyle(
+                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25.0),
+                ))),
+                child:
+                    Text(onRoute! ? 'Finalizar ruta' : 'Iniciar nueva ruta')),
+          ],
+        ))
       ],
     );
   }
