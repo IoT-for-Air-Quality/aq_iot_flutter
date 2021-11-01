@@ -19,7 +19,7 @@ class MQTTManager {
   void initializeMQTTClient() {
     _client = MqttServerClient("35.237.59.165", '');
     _client!.port = 1883;
-    _client!.keepAlivePeriod = 20;
+    _client!.keepAlivePeriod = 200;
     _client!.onDisconnected = onDisconnected;
     _client!.secure = false;
     _client!.logging(on: true);
@@ -29,7 +29,8 @@ class MQTTManager {
     _client!.onSubscribed = onSubscribed;
 
     final MqttConnectMessage connMess = MqttConnectMessage()
-        .withClientIdentifier("client-67")
+        // .withClientIdentifier("client-67")
+        .withClientIdentifier(_identifier)
         .withWillTopic(
             'willtopic') // If you set this you must set a will message
         .withWillMessage('My Will message')
@@ -56,6 +57,18 @@ class MQTTManager {
     }
   }
 
+  Future<MqttClientConnectionStatus?> connect2() {
+    assert(_client != null);
+    try {
+      print('EXAMPLE::Mosquitto start client connecting....');
+      return _client!.connect();
+    } on Exception catch (e) {
+      print('EXAMPLE::client exception - $e');
+      disconnect();
+      return _client!.connect();
+    }
+  }
+
   void disconnect() {
     print('Disconnected');
     _client!.disconnect();
@@ -74,6 +87,41 @@ class MQTTManager {
     print('EXAMPLE::Subscription confirmed for topic $topic');
   }
 
+  Stream<List<MqttReceivedMessage<MqttMessage>>>? getUpdates() {
+    return _client!.updates;
+  }
+
+  void listen() {
+    _client!.updates!.listen((List<MqttReceivedMessage<MqttMessage?>>? c) {
+      debugPrint("AAAA");
+      final recMess = c![0].payload as MqttPublishMessage;
+      final pt =
+          MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+
+      /// The above may seem a little convoluted for users only interested in the
+      /// payload, some users however may be interested in the received publish message,
+      /// lets not constrain ourselves yet until the package has been in the wild
+      /// for a while.
+      /// The payload is a byte buffer, this will be specific to the topic
+      print(
+          'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+      print('');
+    });
+  }
+
+  void subscribeDevice(int deviceId) {
+    debugPrint("efghwekryugfkyuergkuesuhfyrgfhjksrghjfruj");
+    Subscription? co =
+        _client!.subscribe("AQ/Measurement/$deviceId/CO", MqttQos.atMostOnce);
+    Subscription? co2 =
+        _client!.subscribe("AQ/Measurement/$deviceId/CO2", MqttQos.atMostOnce);
+    Subscription? pm25 = _client!
+        .subscribe("AQ/Measurement/$deviceId/PM2.5", MqttQos.atMostOnce);
+    debugPrint("${co!.topic}");
+    debugPrint("${co2!.topic}");
+    debugPrint("${pm25!.topic}");
+  }
+
   /// The unsolicited disconnect callback
   void onDisconnected() {
     print('EXAMPLE::OnDisconnected client callback - Client disconnection');
@@ -86,7 +134,6 @@ class MQTTManager {
   /// The successful connect callback
   void onConnected() {
     print('EXAMPLE::Mosquitto client connected....');
-
     _client!.updates!.listen((List<MqttReceivedMessage<MqttMessage?>>? c) {
       // ignore: avoid_as
       final MqttPublishMessage recMess = c![0].payload as MqttPublishMessage;

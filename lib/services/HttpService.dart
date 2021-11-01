@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:aq_iot_flutter/models/Device.dart';
 import 'package:aq_iot_flutter/models/Variable.dart';
+import 'package:aq_iot_flutter/models/RouteDevice.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import '../models/Organization.dart';
 
 class HttpService {
-  final IP = '192.168.0.3:3000';
+  final IP = '192.168.0.4:3000';
   final orgResource = '/organization';
   final deviceResource = '/device';
   final variableResource = '/variable';
@@ -49,6 +50,20 @@ class HttpService {
       return jsonDecode(response.body)[0]['id'] as int;
     } else {
       throw Exception('Failed to post device');
+    }
+  }
+
+  Future<List<RouteDevice>> getRoutes(int deviceId) async {
+    final queryParameters = {
+      'device': "${deviceId}",
+    };
+    final uri = Uri.http(IP, routeResource, queryParameters);
+    final response = await get(uri);
+    if (response.statusCode == 200) {
+      debugPrint("${jsonDecode(response.body)}");
+      return RouteDevice.getRoutes(jsonDecode(response.body) as List);
+    } else {
+      throw Exception('Failed to load variables');
     }
   }
 

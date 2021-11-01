@@ -516,7 +516,6 @@ class _NewDeviceState extends State<NewDevice> {
                                             ),
                                           ],
                                         );
-                                        ;
                                       } else if (snapshot.hasError) {
                                         child = Padding(
                                           padding:

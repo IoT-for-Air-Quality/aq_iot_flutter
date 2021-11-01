@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert' show utf8;
 import 'dart:typed_data';
 import 'package:aq_iot_flutter/models/Device.dart';
+import 'package:aq_iot_flutter/models/RouteDevice.dart';
+import 'package:aq_iot_flutter/views/CurrentInfo.dart';
 import 'package:aq_iot_flutter/views/Route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
@@ -427,6 +429,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                               ],
                             ),
                           ),
+                          CurrentInfo(widget.device),
                           infoUpdated
                               ? Container(
                                   margin: EdgeInsets.all(0),
@@ -683,7 +686,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                             child: Column(
                                 children:
                                     mobile ? [DeviceRoute(widget.device)] : []),
-                          )
+                          ),
                         ],
                       ),
                     ),

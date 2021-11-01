@@ -1,6 +1,9 @@
+// ignore_for_file: unrelated_type_equality_checks
+
 import 'dart:async';
 import 'dart:math';
 import 'package:aq_iot_flutter/models/Device.dart';
+import 'package:aq_iot_flutter/models/RouteDevice.dart';
 import 'package:aq_iot_flutter/services/HttpService.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -33,7 +36,10 @@ class _DeviceRouteState extends State<DeviceRoute> {
   bool positionStreamStarted = false;
   MQTTManager manager = MQTTManager(host: "35.237.59.165", identifier: "Yo");
 
+  List<RouteDevice>? routes = [];
   Completer<GoogleMapController> _controller = Completer();
+
+  Completer<GoogleMapController> _controllerList = Completer();
 
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
@@ -80,6 +86,11 @@ class _DeviceRouteState extends State<DeviceRoute> {
   final int seconds = 5;
   @override
   void initState() {
+    HttpService().getRoutes(widget.device.id).then((value) => {
+          setState(() {
+            routes = value;
+          })
+        });
     BitmapDescriptor.fromAssetImage(
             ImageConfiguration(devicePixelRatio: 2.5), 'assets/morado.png')
         .then((onValue) {
@@ -127,6 +138,8 @@ class _DeviceRouteState extends State<DeviceRoute> {
     timer.cancel();
     super.dispose();
   }
+
+  void _mapAllRoutes() {}
 
   void _newRoute() {
     HttpService().postRoute(widget.device.id, seconds * 100).then((value) {
@@ -178,6 +191,22 @@ class _DeviceRouteState extends State<DeviceRoute> {
     }).catchError((e) {
       return false;
     });
+  }
+
+  LatLngBounds getBorders(points) {
+    double minLat = points[0]['lat'];
+    double minLong = points[0]['long'];
+    double maxLat = points[0]['lat'];
+    double maxLong = points[0]['long'];
+    points.forEach((point) {
+      if (point['lat'] < minLat) minLat = point['lat'];
+      if (point['lat'] > maxLat) maxLat = point['lat'];
+      if (point['long'] < minLong) minLong = point['long'];
+      if (point['long'] > maxLong) maxLong = point['long'];
+    });
+    return LatLngBounds(
+        southwest: LatLng(minLat - 0.0005, minLong - 0.0005),
+        northeast: LatLng(maxLat + 0.0005, maxLong + 0.0005));
   }
 
   @override
@@ -272,7 +301,109 @@ class _DeviceRouteState extends State<DeviceRoute> {
                 child:
                     Text(onRoute! ? 'Finalizar ruta' : 'Iniciar nueva ruta')),
           ],
-        ))
+        )),
+        Container(
+          margin: EdgeInsets.all(10),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text("Rutas anteriores:"),
+                  ElevatedButton(
+                      onPressed: () {
+                        _mapAllRoutes();
+                      },
+                      child: Icon(Icons.map))
+                ],
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: routes!.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return Container(
+                      child: Column(children: [
+                    GestureDetector(
+                      child: Text('Ruta del  ${routes![index].starttimestamp}'),
+                      onTap: () {
+                        setState(() {
+                          routes![index].show = !routes![index].show;
+                          for (var route in routes!) {
+                            if (route.show == true &&
+                                route.id != routes![index].id)
+                              route.show = false;
+                          }
+                        });
+                      },
+                    ),
+                    routes![index].show
+                        ? Container(
+                            height: 350,
+                            child: routes![index].points.isEmpty
+                                ? Center(
+                                    child: Text('No hay puntos para mostrar.'))
+                                : GoogleMap(
+                                    gestureRecognizers:
+                                        <Factory<OneSequenceGestureRecognizer>>[
+                                      new Factory<OneSequenceGestureRecognizer>(
+                                        () => new EagerGestureRecognizer(),
+                                      ),
+                                    ].toSet(),
+                                    mapType: MapType.normal,
+                                    polylines: [
+                                      Polyline(
+                                          polylineId: PolylineId(''),
+                                          points: routes![index]
+                                              .points
+                                              .map((e) =>
+                                                  LatLng(e['lat'], e['long']))
+                                              .toList())
+                                    ].toSet(),
+                                    markers: routes![index]
+                                        .points
+                                        .map((e) => Marker(
+                                            icon: pinLocationIcon,
+                                            markerId: MarkerId(''),
+                                            position:
+                                                LatLng(e['lat'], e['long'])))
+                                        .toSet(),
+                                    myLocationEnabled: true,
+                                    initialCameraPosition: CameraPosition(
+                                      target: LatLng(0, 0),
+                                      zoom: 17.4746,
+                                    ),
+                                    onMapCreated:
+                                        (GoogleMapController controller) async {
+                                      //_controllerList.complete(controller);
+                                      debugPrint("HELOJOEJ");
+                                      var update = () async {
+                                        var zoom =
+                                            await controller.getZoomLevel();
+                                        // check visible region
+                                        if (zoom == 17.4746) {
+                                          return false;
+                                        }
+                                        CameraUpdate update =
+                                            CameraUpdate.newLatLngBounds(
+                                                getBorders(
+                                                    routes![index].points),
+                                                0);
+                                        controller.moveCamera(update);
+                                        return true;
+                                      };
+                                      // Can set timer or do some error checking here to make sure it doesnt go on forever
+                                      while (await update() == false) {
+                                        update();
+                                      }
+                                    }),
+                          )
+                        : Text(''),
+                  ]));
+                },
+              )
+            ],
+          ),
+        )
       ],
     );
   }
