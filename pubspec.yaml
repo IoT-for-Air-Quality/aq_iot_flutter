@@ -36,6 +36,8 @@ dependencies:
   wifi_iot: ^0.3.8
   flutter_reactive_ble: ^5.0.0
   flutter_polyline_points: ^1.0.0
+  date_format: ^2.0.4
+  fl_chart: ^0.40.2
 
 dev_dependencies:
   flutter_test:

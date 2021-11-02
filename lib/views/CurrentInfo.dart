@@ -76,7 +76,7 @@ class _CurrentInfoState extends State<CurrentInfo> {
                   ),
                 ),
               ),
-              Text("$co")
+              co == null ? CircularProgressIndicator() : Text("$co")
             ],
           ),
           Row(
@@ -91,7 +91,7 @@ class _CurrentInfoState extends State<CurrentInfo> {
                   ),
                 ),
               ),
-              Text("$co2")
+              co2 == null ? CircularProgressIndicator() : Text("$co2")
             ],
           ),
           Row(
@@ -106,7 +106,7 @@ class _CurrentInfoState extends State<CurrentInfo> {
                   ),
                 ),
               ),
-              Text("$pm25")
+              pm25 == null ? CircularProgressIndicator() : Text("$pm25")
             ],
           )
         ],

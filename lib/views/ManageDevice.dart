@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:aq_iot_flutter/models/Device.dart';
 import 'package:aq_iot_flutter/models/RouteDevice.dart';
 import 'package:aq_iot_flutter/views/CurrentInfo.dart';
+import 'package:aq_iot_flutter/views/HistoricData.dart';
 import 'package:aq_iot_flutter/views/Route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
@@ -31,6 +32,7 @@ class _ManageDeviceState extends State<ManageDevice> {
   // To track whether the device is still connected to Bluetooth
   bool get isConnected => false;
   // connection != null && connection.isConnected;
+  bool viewingHistoric = false;
 
   late int _deviceState;
 
@@ -185,6 +187,18 @@ class _ManageDeviceState extends State<ManageDevice> {
         connection.output.add(utf8.encode("HELLO" + "\r\n") as Uint8List);
       }
     }
+  }
+
+  void closeHistoric() {
+    setState(() {
+      viewingHistoric = false;
+    });
+  }
+
+  void viewHistoric() {
+    setState(() {
+      viewingHistoric = true;
+    });
   }
 
   void _onDataReceived(Uint8List data) {
@@ -394,6 +408,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                       child: Column(
                         children: [
                           Container(
+                            height: 50,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
@@ -406,6 +421,75 @@ class _ManageDeviceState extends State<ManageDevice> {
                                     ),
                                     Text(
                                       'Información del dispositivo',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    )
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
+                          CurrentInfo(widget.device),
+                          ElevatedButton(
+                              style: ButtonStyle(
+                                  shape: MaterialStateProperty.all<
+                                          RoundedRectangleBorder>(
+                                      RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                              ))),
+                              onPressed: () => {
+                                    viewingHistoric
+                                        ? closeHistoric()
+                                        : viewHistoric()
+                                  },
+                              child: Container(
+                                  width: 150,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: viewingHistoric
+                                        ? [
+                                            Text('Cerrar historico'),
+                                            Icon(Icons.close)
+                                          ]
+                                        : [
+                                            Text('Ver historico'),
+                                            Icon(Icons.calendar_today)
+                                          ],
+                                  ))),
+                          viewingHistoric
+                              ? HistoricData(widget.device)
+                              : Container()
+                        ],
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.all(10.0),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xfffcf4bf),
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 4,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.green,
+                                      size: 30.0,
+                                    ),
+                                    Text(
+                                      'Configuración del dispositivo',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
@@ -429,7 +513,6 @@ class _ManageDeviceState extends State<ManageDevice> {
                               ],
                             ),
                           ),
-                          CurrentInfo(widget.device),
                           infoUpdated
                               ? Container(
                                   margin: EdgeInsets.all(0),

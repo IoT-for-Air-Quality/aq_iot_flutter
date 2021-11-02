@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:aq_iot_flutter/models/Device.dart';
+import 'package:aq_iot_flutter/models/Measurement.dart';
 import 'package:aq_iot_flutter/models/Variable.dart';
 import 'package:aq_iot_flutter/models/RouteDevice.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class HttpService {
   final deviceResource = '/device';
   final variableResource = '/variable';
   final routeResource = '/route';
+  final measurementResource = '/measurement';
   Future<List<Organization>> getOrganizations() async {
     debugPrint("hfwjkh");
 
@@ -93,6 +95,25 @@ class HttpService {
       return jsonDecode(response.body)[0]['id'] as int;
     } else {
       throw Exception('Failed to end route');
+    }
+  }
+
+  //Measurements
+
+  Future<List<Measurement>> getMeasurements(
+      int deviceId, String startDate, String endDate) async {
+    final queryParameters = {
+      'device': "${deviceId}",
+      'startDate': "${startDate}",
+      'endDate': "${endDate}",
+    };
+    final uri = Uri.http(IP, measurementResource, queryParameters);
+    final response = await get(uri);
+    if (response.statusCode == 200) {
+      debugPrint("${jsonDecode(response.body)}");
+      return Measurement.getMeasurements(jsonDecode(response.body) as List);
+    } else {
+      throw Exception('Failed to load variables');
     }
   }
 }
