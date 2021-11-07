@@ -19,7 +19,7 @@ class Measurement {
         timestamp: DateTime.parse(json['timestamp']),
         device: json['device'],
         variable: json['variable'],
-        value: (json['value'] as int).toDouble());
+        value: (json['value']).toDouble());
   }
 
   static getMeasurements(List data) {

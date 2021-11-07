@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:aq_iot_flutter/models/Device.dart';
 import 'package:aq_iot_flutter/models/RouteDevice.dart';
 import 'package:aq_iot_flutter/services/HttpService.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ class _DeviceRouteState extends State<DeviceRoute> {
   bool positionStreamStarted = false;
   MQTTManager manager = MQTTManager(host: "35.237.59.165", identifier: "Yo");
 
-  List<RouteDevice>? routes = [];
+  List<RouteDevice>? routes;
   Completer<GoogleMapController> _controller = Completer();
 
   Completer<GoogleMapController> _controllerList = Completer();
@@ -307,6 +308,7 @@ class _DeviceRouteState extends State<DeviceRoute> {
           child: Column(
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   Text("Rutas anteriores:"),
                   ElevatedButton(
@@ -316,91 +318,248 @@ class _DeviceRouteState extends State<DeviceRoute> {
                       child: Icon(Icons.map))
                 ],
               ),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: routes!.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return Container(
-                      child: Column(children: [
-                    GestureDetector(
-                      child: Text('Ruta del  ${routes![index].starttimestamp}'),
-                      onTap: () {
-                        setState(() {
-                          routes![index].show = !routes![index].show;
-                          for (var route in routes!) {
-                            if (route.show == true &&
-                                route.id != routes![index].id)
-                              route.show = false;
-                          }
-                        });
-                      },
-                    ),
-                    routes![index].show
-                        ? Container(
-                            height: 350,
-                            child: routes![index].points.isEmpty
-                                ? Center(
-                                    child: Text('No hay puntos para mostrar.'))
-                                : GoogleMap(
-                                    gestureRecognizers:
-                                        <Factory<OneSequenceGestureRecognizer>>[
-                                      new Factory<OneSequenceGestureRecognizer>(
-                                        () => new EagerGestureRecognizer(),
-                                      ),
-                                    ].toSet(),
-                                    mapType: MapType.normal,
-                                    polylines: [
-                                      Polyline(
-                                          polylineId: PolylineId(''),
-                                          points: routes![index]
-                                              .points
-                                              .map((e) =>
-                                                  LatLng(e['lat'], e['long']))
-                                              .toList())
-                                    ].toSet(),
-                                    markers: routes![index]
-                                        .points
-                                        .map((e) => Marker(
-                                            icon: pinLocationIcon,
-                                            markerId: MarkerId(''),
-                                            position:
-                                                LatLng(e['lat'], e['long'])))
-                                        .toSet(),
-                                    myLocationEnabled: true,
-                                    initialCameraPosition: CameraPosition(
-                                      target: LatLng(0, 0),
-                                      zoom: 17.4746,
+              routes == null
+                  ? CircularProgressIndicator()
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: routes!.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return Container(
+                            child: Column(children: [
+                          GestureDetector(
+                            child: Container(
+                                width: 300,
+                                height: 40,
+                                decoration: new BoxDecoration(
+                                  border: Border(
+                                    top: BorderSide(
+                                        color: Colors.amber,
+                                        width: 10,
+                                        style: BorderStyle.solid),
+                                  ),
+                                  color: routes![index].show
+                                      ? Colors.amber
+                                      : Colors.amberAccent,
+                                ),
+                                child: Center(
+                                    child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Text(
+                                        'Ruta del  ${routes![index].starttimestamp}'),
+                                    Icon(Icons.arrow_downward_rounded)
+                                  ],
+                                ))),
+                            onTap: () {
+                              setState(() {
+                                routes![index].show = !routes![index].show;
+                                for (var route in routes!) {
+                                  if (route.show == true &&
+                                      route.id != routes![index].id)
+                                    route.show = false;
+                                }
+                              });
+                            },
+                          ),
+                          routes![index].show
+                              ? Column(
+                                  children: [
+                                    Container(
+                                      height: 350,
+                                      child: routes![index].points.isEmpty
+                                          ? Center(
+                                              child: Text(
+                                                  'No hay puntos para mostrar.'))
+                                          : GoogleMap(
+                                              gestureRecognizers: <
+                                                  Factory<
+                                                      OneSequenceGestureRecognizer>>[
+                                                new Factory<
+                                                    OneSequenceGestureRecognizer>(
+                                                  () =>
+                                                      new EagerGestureRecognizer(),
+                                                ),
+                                              ].toSet(),
+                                              mapType: MapType.normal,
+                                              polylines: [
+                                                Polyline(
+                                                    polylineId: PolylineId(''),
+                                                    points: routes![index]
+                                                        .points
+                                                        .map((e) => LatLng(
+                                                            e['lat'],
+                                                            e['long']))
+                                                        .toList())
+                                              ].toSet(),
+                                              markers: routes![index]
+                                                  .points
+                                                  .map((e) => Marker(
+                                                      icon: pinLocationIcon,
+                                                      markerId: MarkerId(''),
+                                                      position: LatLng(
+                                                          e['lat'], e['long'])))
+                                                  .toSet(),
+                                              myLocationEnabled: true,
+                                              initialCameraPosition:
+                                                  CameraPosition(
+                                                target: LatLng(0, 0),
+                                                zoom: 17.4746,
+                                              ),
+                                              onMapCreated: (GoogleMapController
+                                                  controller) async {
+                                                //_controllerList.complete(controller);
+                                                var update = () async {
+                                                  var zoom = await controller
+                                                      .getZoomLevel();
+                                                  // check visible region
+                                                  if (zoom == 17.4746) {
+                                                    return false;
+                                                  }
+                                                  CameraUpdate update =
+                                                      CameraUpdate
+                                                          .newLatLngBounds(
+                                                              getBorders(
+                                                                  routes![index]
+                                                                      .points),
+                                                              0);
+                                                  controller.moveCamera(update);
+                                                  return true;
+                                                };
+                                                // Can set timer or do some error checking here to make sure it doesnt go on forever
+                                                while (
+                                                    await update() == false) {
+                                                  update();
+                                                }
+                                              }),
                                     ),
-                                    onMapCreated:
-                                        (GoogleMapController controller) async {
-                                      //_controllerList.complete(controller);
-                                      debugPrint("HELOJOEJ");
-                                      var update = () async {
-                                        var zoom =
-                                            await controller.getZoomLevel();
-                                        // check visible region
-                                        if (zoom == 17.4746) {
-                                          return false;
-                                        }
-                                        CameraUpdate update =
-                                            CameraUpdate.newLatLngBounds(
-                                                getBorders(
-                                                    routes![index].points),
-                                                0);
-                                        controller.moveCamera(update);
-                                        return true;
-                                      };
-                                      // Can set timer or do some error checking here to make sure it doesnt go on forever
-                                      while (await update() == false) {
-                                        update();
-                                      }
-                                    }),
-                          )
-                        : Text(''),
-                  ]));
-                },
-              )
+                                    Container(
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  'CO:',
+                                                  style:
+                                                      TextStyle(fontSize: 20),
+                                                ),
+                                                SizedBox(
+                                                    height: 300,
+                                                    child: Container(
+                                                      margin: EdgeInsets.only(
+                                                          top: 20, bottom: 20),
+                                                      child: LineChart(
+                                                        LineChartData(
+                                                            lineBarsData: [
+                                                              LineChartBarData(
+                                                                  isCurved:
+                                                                      true,
+                                                                  spots: routes![
+                                                                          index]
+                                                                      .measurements
+                                                                      .where((element) =>
+                                                                          element.variable ==
+                                                                          1)
+                                                                      .toList()
+                                                                      .map((e) => FlSpot(
+                                                                          e.timestamp
+                                                                              .millisecondsSinceEpoch
+                                                                              .toDouble(),
+                                                                          e.value))
+                                                                      .toList())
+                                                            ]),
+                                                      ),
+                                                    )),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  'CO2:',
+                                                  style:
+                                                      TextStyle(fontSize: 20),
+                                                ),
+                                                SizedBox(
+                                                    height: 300,
+                                                    child: Container(
+                                                      margin: EdgeInsets.only(
+                                                          top: 20, bottom: 20),
+                                                      child: LineChart(
+                                                        LineChartData(
+                                                            lineBarsData: [
+                                                              LineChartBarData(
+                                                                  isCurved:
+                                                                      true,
+                                                                  spots: routes![
+                                                                          index]
+                                                                      .measurements
+                                                                      .where((element) =>
+                                                                          element.variable ==
+                                                                          2)
+                                                                      .toList()
+                                                                      .map((e) => FlSpot(
+                                                                          e.timestamp
+                                                                              .millisecondsSinceEpoch
+                                                                              .toDouble(),
+                                                                          e.value))
+                                                                      .toList())
+                                                            ]),
+                                                      ),
+                                                    )),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  'PM2.5:',
+                                                  style:
+                                                      TextStyle(fontSize: 20),
+                                                ),
+                                                SizedBox(
+                                                    height: 300,
+                                                    child: Container(
+                                                      margin: EdgeInsets.only(
+                                                          top: 20, bottom: 20),
+                                                      child: LineChart(
+                                                        LineChartData(
+                                                            lineBarsData: [
+                                                              LineChartBarData(
+                                                                  isCurved:
+                                                                      true,
+                                                                  spots: routes![
+                                                                          index]
+                                                                      .measurements
+                                                                      .where((element) =>
+                                                                          element.variable ==
+                                                                          3)
+                                                                      .toList()
+                                                                      .map((e) => FlSpot(
+                                                                          e.timestamp
+                                                                              .millisecondsSinceEpoch
+                                                                              .toDouble(),
+                                                                          e.value))
+                                                                      .toList())
+                                                            ]),
+                                                      ),
+                                                    )),
+                                              ],
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                )
+                              : Container(),
+                        ]));
+                      },
+                    )
             ],
           ),
         )
