@@ -470,92 +470,84 @@ class _BTConectionSate extends State<BTConection> {
   late BluetoothDevice _device = BluetoothDevice(address: "");
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text('AQ iot nodess configuration'),
-        ),
-        body: Container(
-          child: devices == []
-              ? Container()
-              : Container(
-                  child: Center(
-                  child: Container(
-                    height: 150,
-                    margin: const EdgeInsets.all(10.0),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xfffcf4bf),
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 4,
+    return Container(
+      child: devices == []
+          ? Container()
+          : Container(
+              height: 150,
+              margin: const EdgeInsets.all(10.0),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xfffcf4bf),
+                border: Border.all(
+                  color: Colors.black,
+                  width: 4,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Text("Bluetooth"),
+                      Switch(
+                        value: _bluetoothState.isEnabled,
+                        onChanged: (bool value) {
+                          future() async {
+                            if (value) {
+                              // Enable Bluetooth
+                              await FlutterBluetoothSerial.instance
+                                  .requestEnable();
+                            } else {
+                              // Disable Bluetooth
+                              await FlutterBluetoothSerial.instance
+                                  .requestDisable();
+                            }
+
+                            // In order to update the devices list
+                            await getPairedDevices();
+                            _isButtonUnavailable = false;
+
+                            // Disconnect from any device before
+                            // turning off Bluetooth
+                            if (_connected) {
+                              _disconnect();
+                            }
+                          }
+
+                          future().then((_) {
+                            setState(() {});
+                          });
+                        },
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Text("Bluetooth"),
-                            Switch(
-                              value: _bluetoothState.isEnabled,
-                              onChanged: (bool value) {
-                                future() async {
-                                  if (value) {
-                                    // Enable Bluetooth
-                                    await FlutterBluetoothSerial.instance
-                                        .requestEnable();
-                                  } else {
-                                    // Disable Bluetooth
-                                    await FlutterBluetoothSerial.instance
-                                        .requestDisable();
-                                  }
-
-                                  // In order to update the devices list
-                                  await getPairedDevices();
-                                  _isButtonUnavailable = false;
-
-                                  // Disconnect from any device before
-                                  // turning off Bluetooth
-                                  if (_connected) {
-                                    _disconnect();
-                                  }
-                                }
-
-                                future().then((_) {
-                                  setState(() {});
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            DropdownButton<DiscoveredDevice>(
-                                items: devices
-                                    .map<DropdownMenuItem<DiscoveredDevice>>(
-                                        (DiscoveredDevice value) {
-                                  return DropdownMenuItem<DiscoveredDevice>(
-                                    value: value,
-                                    child: value.name == ''
-                                        ? Text("${value.id}")
-                                        : Text("${value.name}"),
-                                  );
-                                }).toList(),
-                                value: device,
-                                onChanged: (value) =>
-                                    setState(() => device = value)),
-                            ElevatedButton(
-                              onPressed: _connect,
-                              child: Text('Connect'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                )),
-        ));
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      DropdownButton<DiscoveredDevice>(
+                          items: devices
+                              .map<DropdownMenuItem<DiscoveredDevice>>(
+                                  (DiscoveredDevice value) {
+                            return DropdownMenuItem<DiscoveredDevice>(
+                              value: value,
+                              child: value.name == ''
+                                  ? Text("${value.id}")
+                                  : Text("${value.name}"),
+                            );
+                          }).toList(),
+                          value: device,
+                          onChanged: (value) => setState(() => device = value)),
+                      ElevatedButton(
+                        onPressed: _connect,
+                        child: Text('Connect'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+    );
   }
 }

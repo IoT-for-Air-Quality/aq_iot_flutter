@@ -75,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: BTConection(),
+      home: MainPage(),
     );
   }
 }

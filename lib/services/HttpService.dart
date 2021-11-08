@@ -10,6 +10,8 @@ import '../models/Organization.dart';
 
 class HttpService {
   final IP = '192.168.0.4:3000';
+  // final IP = '35.211.127.202:3000';
+
   final orgResource = '/organization';
   final deviceResource = '/device';
   final variableResource = '/variable';
@@ -22,6 +24,21 @@ class HttpService {
     final response = await get(uri);
     if (response.statusCode == 200) {
       return Organization.getOrganizations(jsonDecode(response.body) as List);
+    } else {
+      throw Exception('Failed to load organizations');
+    }
+  }
+
+  Future<List<Device>> getDevicesOrganization(int organization) async {
+    final queryParameters = {
+      'org': "${organization}",
+    };
+    final uri = Uri.http(IP, deviceResource, queryParameters);
+    final response = await get(uri);
+    debugPrint("${uri}");
+    debugPrint("${response.body}");
+    if (response.statusCode == 200) {
+      return Device.getDevices(jsonDecode(response.body) as List);
     } else {
       throw Exception('Failed to load organizations');
     }
