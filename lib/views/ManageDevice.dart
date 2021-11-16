@@ -3,17 +3,20 @@ import 'dart:convert' show utf8;
 import 'dart:typed_data';
 import 'package:aq_iot_flutter/models/Device.dart';
 import 'package:aq_iot_flutter/models/RouteDevice.dart';
+import 'package:aq_iot_flutter/services/BluetoothService.dart';
 import 'package:aq_iot_flutter/views/CurrentInfo.dart';
 import 'package:aq_iot_flutter/views/HistoricData.dart';
 import 'package:aq_iot_flutter/views/Route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 import 'Route.dart';
 
 class ManageDevice extends StatefulWidget {
   final Device device;
-  const ManageDevice(this.device);
+  final DiscoveredDevice? deviceBT;
+  const ManageDevice(this.device, this.deviceBT);
 
   @override
   _ManageDeviceState createState() => new _ManageDeviceState();
@@ -46,6 +49,13 @@ class _ManageDeviceState extends State<ManageDevice> {
   String wifiPass = "";
   String ipBroker = "";
   String port = "";
+  String? wifiStatus;
+  double? wifiRSSI;
+
+  double? deviceSpace;
+  double? usedSpace;
+
+  String? swVersion;
 
   bool cId = false;
   bool cWifiSsid = false;
@@ -58,10 +68,66 @@ class _ManageDeviceState extends State<ManageDevice> {
   bool infoUpdated = true;
 
   bool inRoute = false;
+  late Timer timer;
+
+  void updateCharacteristics() {
+    QualifiedCharacteristic wifiCharacteristic = QualifiedCharacteristic(
+        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+        characteristicId: Uuid.parse("00005001-0000-1000-8000-00805F9B34FB"),
+        deviceId: widget.deviceBT!.id);
+
+    QualifiedCharacteristic rssiCharacteristic = QualifiedCharacteristic(
+        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+        characteristicId: Uuid.parse("00005002-0000-1000-8000-00805F9B34FB"),
+        deviceId: widget.deviceBT!.id);
+
+    QualifiedCharacteristic spiffsUsed = QualifiedCharacteristic(
+        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+        characteristicId: Uuid.parse("00006002-0000-1000-8000-00805F9B34FB"),
+        deviceId: widget.deviceBT!.id);
+
+    BluetoothService().readCharacteristic(wifiCharacteristic).then((value) {
+      setState(() {
+        wifiStatus = value;
+      });
+    });
+    BluetoothService().readCharacteristic(rssiCharacteristic).then((value) {
+      setState(() {
+        wifiRSSI = double.parse(value);
+      });
+    });
+    BluetoothService().readCharacteristic(spiffsUsed).then((value) {
+      setState(() {
+        usedSpace = double.parse(value);
+      });
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    QualifiedCharacteristic spiffsTotal = QualifiedCharacteristic(
+        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+        characteristicId: Uuid.parse("00006001-0000-1000-8000-00805F9B34FB"),
+        deviceId: widget.deviceBT!.id);
+
+    QualifiedCharacteristic versionSW = QualifiedCharacteristic(
+        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+        characteristicId: Uuid.parse("00002A28-0000-1000-8000-00805F9B34FB"),
+        deviceId: widget.deviceBT!.id);
+    BluetoothService().readCharacteristic(spiffsTotal).then((value) {
+      setState(() {
+        deviceSpace = double.parse(value);
+      });
+    });
+    BluetoothService().readCharacteristic(versionSW).then((value) {
+      setState(() {
+        swVersion = value;
+      });
+    });
+
+    timer = Timer.periodic(
+        Duration(seconds: 1), (Timer t) => updateCharacteristics());
 
     // Get current state
     FlutterBluetoothSerial.instance.state.then((state) {
@@ -287,7 +353,7 @@ class _ManageDeviceState extends State<ManageDevice> {
       connection.dispose();
       //connection = null;
     }
-
+    timer.cancel();
     super.dispose();
   }
 
@@ -351,6 +417,7 @@ class _ManageDeviceState extends State<ManageDevice> {
   }
 
   finish() {
+    timer.cancel();
     Navigator.pop(context);
   }
 
@@ -414,86 +481,108 @@ class _ManageDeviceState extends State<ManageDevice> {
                         children: [
                           Container(
                             height: 50,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = !showWifiAlert;
-                                        showDiskAlert = false;
-                                        showBatteryAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = false;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.wifi_off,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showBatteryAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = false;
-                                        showDiskAlert = !showDiskAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.disc_full,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showDiskAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = false;
-                                        showBatteryAlert = !showBatteryAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.battery_alert,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showDiskAlert = false;
-                                        showBatteryAlert = false;
-                                        showHardwareAlert = false;
-                                        showSoftwareAlert = !showSoftwareAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.warning,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showDiskAlert = false;
-                                        showBatteryAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = !showHardwareAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.settings,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                              ],
-                            ),
+                            child: wifiStatus == null ||
+                                    usedSpace == null ||
+                                    deviceSpace == null
+                                ? CircularProgressIndicator()
+                                : Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            showWifiAlert = !showWifiAlert;
+                                            showDiskAlert = false;
+                                            showBatteryAlert = false;
+                                            showSoftwareAlert = false;
+                                            showHardwareAlert = false;
+                                          });
+                                        },
+                                        child: wifiStatus! == "Connected"
+                                            ? Icon(
+                                                Icons.wifi,
+                                                color: Colors.green,
+                                                size: 30.0,
+                                              )
+                                            : Icon(
+                                                Icons.wifi_off,
+                                                color: Colors.red,
+                                                size: 30.0,
+                                              ),
+                                      ),
+                                      GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              showWifiAlert = false;
+                                              showBatteryAlert = false;
+                                              showSoftwareAlert = false;
+                                              showHardwareAlert = false;
+                                              showDiskAlert = !showDiskAlert;
+                                            });
+                                          },
+                                          child:
+                                              usedSpace! / deviceSpace! > 0.75
+                                                  ? Icon(
+                                                      Icons.disc_full,
+                                                      color: Colors.red,
+                                                      size: 30.0,
+                                                    )
+                                                  : Icon(
+                                                      Icons.storage,
+                                                      color: Colors.green,
+                                                      size: 30.0,
+                                                    )),
+                                      GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              showWifiAlert = false;
+                                              showDiskAlert = false;
+                                              showSoftwareAlert = false;
+                                              showHardwareAlert = false;
+                                              showBatteryAlert =
+                                                  !showBatteryAlert;
+                                            });
+                                          },
+                                          child: Icon(
+                                            Icons.battery_alert,
+                                            color: Colors.red,
+                                            size: 30.0,
+                                          )),
+                                      GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              showWifiAlert = false;
+                                              showDiskAlert = false;
+                                              showBatteryAlert = false;
+                                              showHardwareAlert = false;
+                                              showSoftwareAlert =
+                                                  !showSoftwareAlert;
+                                            });
+                                          },
+                                          child: Icon(
+                                            Icons.warning,
+                                            color: Colors.red,
+                                            size: 30.0,
+                                          )),
+                                      GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              showWifiAlert = false;
+                                              showDiskAlert = false;
+                                              showBatteryAlert = false;
+                                              showSoftwareAlert = false;
+                                              showHardwareAlert =
+                                                  !showHardwareAlert;
+                                            });
+                                          },
+                                          child: Icon(
+                                            Icons.settings,
+                                            color: Colors.red,
+                                            size: 30.0,
+                                          )),
+                                    ],
+                                  ),
                           ),
                           Column(
                             children: [
@@ -506,18 +595,34 @@ class _ManageDeviceState extends State<ManageDevice> {
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(
-                                                Icons.wifi_off,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Nodo sin conexión a internet',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
+                                              wifiStatus! == "Connected"
+                                                  ? Icon(
+                                                      Icons.wifi,
+                                                      color: Colors.green,
+                                                      size: 30.0,
+                                                    )
+                                                  : Icon(
+                                                      Icons.wifi_off,
+                                                      color: Colors.red,
+                                                      size: 30.0,
+                                                    ),
+                                              wifiStatus! == "Connected"
+                                                  ? Text(
+                                                      '   Señal WiFi ${wifiRSSI}dB',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    )
+                                                  : Text(
+                                                      '   Nodo sin conexión a internet',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    )
                                             ],
                                           ),
                                         ],
@@ -533,18 +638,46 @@ class _ManageDeviceState extends State<ManageDevice> {
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(
-                                                Icons.disc_full,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Almacenamiento lleno',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
+                                              usedSpace! / deviceSpace! > 0.75
+                                                  ? Icon(
+                                                      Icons.disc_full,
+                                                      color: Colors.red,
+                                                      size: 30.0,
+                                                    )
+                                                  : Icon(
+                                                      Icons.storage,
+                                                      color: Colors.green,
+                                                      size: 30.0,
+                                                    ),
+                                              usedSpace! / deviceSpace! > 0.75
+                                                  ? Text(
+                                                      '   Almacenamiento casi lleno',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    )
+                                                  : Column(
+                                                      children: [
+                                                        Text(
+                                                          '',
+                                                          style: TextStyle(
+                                                            fontSize: 10,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          '   Memoria total: ${deviceSpace! / 1000}KB',
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                        Text(
+                                                          '   Memoria usada: ${usedSpace! / 1000}KB',
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        )
+                                                      ],
+                                                    )
                                             ],
                                           ),
                                         ],
@@ -1055,8 +1188,10 @@ class _ManageDeviceState extends State<ManageDevice> {
                               margin: EdgeInsets.all(20),
                               child: Column(
                                 children: [
-                                  Text(widget.device.swVersion),
-                                  Text("No hay actualizaciones disponibles")
+                                  swVersion == null
+                                      ? CircularProgressIndicator()
+                                      : Text("$swVersion")
+                                  // Text("No hay actualizaciones disponibles")
                                 ],
                               ))
                         ],

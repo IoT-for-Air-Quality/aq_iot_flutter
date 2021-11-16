@@ -15,8 +15,8 @@ import 'ManageDevice.dart';
 import 'package:wifi_iot/wifi_iot.dart';
 
 class NewDevice extends StatefulWidget {
-  final String deviceID;
-  const NewDevice(this.deviceID);
+  final DiscoveredDevice deviceBT;
+  const NewDevice(this.deviceBT);
 
   @override
   _NewDeviceState createState() => _NewDeviceState();
@@ -50,7 +50,8 @@ class _NewDeviceState extends State<NewDevice> {
                           device.wifiSSID)
                       .then((value) => Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
-                              builder: (context) => ManageDevice(device))))
+                              builder: (context) =>
+                                  ManageDevice(device, widget.deviceBT))))
                 });
       },
     );
@@ -60,7 +61,7 @@ class _NewDeviceState extends State<NewDevice> {
     final characteristic = QualifiedCharacteristic(
         serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
         characteristicId: characteristicID,
-        deviceId: widget.deviceID);
+        deviceId: widget.deviceBT.id);
     return await BluetoothService().writeSlow(characteristic, "$id");
   }
 

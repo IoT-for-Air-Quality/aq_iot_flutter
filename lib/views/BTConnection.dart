@@ -222,6 +222,15 @@ class _BTConectionSate extends State<BTConection> {
     characteristics.add(Uuid.parse("00003001-0000-1000-8000-00805F9B34FB"));
     characteristics.add(Uuid.parse("00003002-0000-1000-8000-00805F9B34FB"));
 
+    characteristics.add(Uuid.parse("00005001-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00005002-0000-1000-8000-00805F9B34FB"));
+
+    characteristics.add(Uuid.parse("00006001-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00006002-0000-1000-8000-00805F9B34FB"));
+
+    characteristics.add(Uuid.parse("00007001-0000-1000-8000-00805F9B34FB"));
+    characteristics.add(Uuid.parse("00007002-0000-1000-8000-00805F9B34FB"));
+
     BluetoothService().connectDevice(device!.id, {
       Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"): characteristics
     }).listen((event) async {
@@ -232,13 +241,13 @@ class _BTConectionSate extends State<BTConection> {
         if (nodeSensor.id == 0) {
           await subscription!.cancel();
           Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => NewDevice(device!.id)));
+              MaterialPageRoute(builder: (context) => NewDevice(device!)));
         } else {
           debugPrint("Previous");
           // await getFullCharacteristics();
           await subscription!.cancel();
           Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => ManageDevice(nodeSensor)));
+              builder: (context) => ManageDevice(nodeSensor, device!)));
         }
       }
     });

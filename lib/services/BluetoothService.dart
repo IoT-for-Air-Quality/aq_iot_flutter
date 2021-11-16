@@ -26,6 +26,12 @@ class BluetoothService {
         await flutterReactiveBle.readCharacteristic(characteristic));
   }
 
+  Stream<List<int>> notifyCharacteristic(
+      QualifiedCharacteristic characteristic) {
+    debugPrint("Service");
+    return flutterReactiveBle.subscribeToCharacteristic(characteristic);
+  }
+
   Future<void> writeSlow(QualifiedCharacteristic characteristic, String value) {
     List<int> bytes = utf8.encode(value);
     return flutterReactiveBle.writeCharacteristicWithResponse(characteristic,

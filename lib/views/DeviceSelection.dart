@@ -33,7 +33,7 @@ class _DeviceSelectionState extends State<DeviceSelection> {
   void _selectDevice() {
     Navigator.of(context).push(MaterialPageRoute(
         builder: (context) =>
-            kIsWeb ? ManageDeviceWeb(device) : ManageDevice(device)));
+            kIsWeb ? ManageDeviceWeb(device) : ManageDevice(device, null)));
   }
 
   @override

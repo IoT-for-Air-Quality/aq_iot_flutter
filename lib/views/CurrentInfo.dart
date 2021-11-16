@@ -194,6 +194,7 @@ class _CurrentInfoState extends State<CurrentInfo> {
                       ))
             ],
           ),
+          Text(""),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -209,6 +210,12 @@ class _CurrentInfoState extends State<CurrentInfo> {
                       ],
                     )
             ],
+          ),
+          Text(
+            "",
+            style: TextStyle(
+              fontSize: 5,
+            ),
           )
         ],
       ),
