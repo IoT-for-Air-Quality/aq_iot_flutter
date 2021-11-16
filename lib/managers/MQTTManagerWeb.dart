@@ -17,8 +17,7 @@ class MQTTManager {
         _host = host;
 
   void initializeMQTTClient() {
-    _client = MqttServerClient(
-        "35.237.59.165", DateTime.now().microsecondsSinceEpoch.toString());
+    _client = MqttServerClient("35.237.59.165", '');
     _client!.port = 1883;
     _client!.keepAlivePeriod = 200;
     _client!.onDisconnected = onDisconnected;

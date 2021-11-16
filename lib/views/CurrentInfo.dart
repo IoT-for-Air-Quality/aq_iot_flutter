@@ -17,6 +17,7 @@ class _CurrentInfoState extends State<CurrentInfo> {
   double? co;
   double? co2;
   double? pm25;
+  DateTime? lastUpdated;
   @override
   void initState() {
     super.initState();
@@ -42,17 +43,20 @@ class _CurrentInfoState extends State<CurrentInfo> {
 
         if (c[0].topic == "AQ/Measurement/${widget.device.id}/CO") {
           setState(() {
+            lastUpdated = DateTime.now();
             co = double.parse(pt);
           });
         }
         if (c[0].topic == "AQ/Measurement/${widget.device.id}/CO2") {
           setState(() {
             co2 = double.parse(pt);
+            lastUpdated = DateTime.now();
           });
         }
         if (c[0].topic == "AQ/Measurement/${widget.device.id}/PM2.5") {
           setState(() {
             pm25 = double.parse(pt);
+            lastUpdated = DateTime.now();
           });
         }
       });
@@ -72,11 +76,38 @@ class _CurrentInfoState extends State<CurrentInfo> {
                 child: Text(
                   'CO',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 35,
                   ),
                 ),
               ),
-              co == null ? CircularProgressIndicator() : Text("$co")
+              co == null
+                  ? CircularProgressIndicator()
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: co! < 20
+                            ? Colors.green[100]
+                            : co! < 50
+                                ? Colors.amber[100]
+                                : Colors.red[100],
+                        border: Border.all(
+                          color: co! < 20
+                              ? Colors.green[400]!
+                              : co! < 50
+                                  ? Colors.amber[400]!
+                                  : Colors.red[400]!,
+                          width: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(
+                          "$co ppm",
+                          style: TextStyle(
+                            fontSize: 20,
+                          ),
+                        ),
+                      ))
             ],
           ),
           Row(
@@ -85,13 +116,40 @@ class _CurrentInfoState extends State<CurrentInfo> {
               Padding(
                 padding: const EdgeInsets.all(10),
                 child: Text(
-                  'CO2',
+                  'CO\u2082',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 35,
                   ),
                 ),
               ),
-              co2 == null ? CircularProgressIndicator() : Text("$co2")
+              co2 == null
+                  ? CircularProgressIndicator()
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: co2! < 50
+                            ? Colors.green[100]
+                            : co2! < 100
+                                ? Colors.amber[100]
+                                : Colors.red[100],
+                        border: Border.all(
+                          color: co2! < 20
+                              ? Colors.green[400]!
+                              : co2! < 50
+                                  ? Colors.amber[400]!
+                                  : Colors.red[400]!,
+                          width: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(
+                          "$co2 ppm",
+                          style: TextStyle(
+                            fontSize: 20,
+                          ),
+                        ),
+                      ))
             ],
           ),
           Row(
@@ -100,13 +158,56 @@ class _CurrentInfoState extends State<CurrentInfo> {
               Padding(
                 padding: const EdgeInsets.all(10),
                 child: Text(
-                  'PM2.5',
+                  'PM 2.5',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 35,
                   ),
                 ),
               ),
-              pm25 == null ? CircularProgressIndicator() : Text("$pm25")
+              pm25 == null
+                  ? CircularProgressIndicator()
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: pm25! < 0.25
+                            ? Colors.green[100]
+                            : pm25! < 0.75
+                                ? Colors.amber[100]
+                                : Colors.red[100],
+                        border: Border.all(
+                          color: pm25! < 0.25
+                              ? Colors.green[400]!
+                              : pm25! < 0.75
+                                  ? Colors.amber[400]!
+                                  : Colors.red[400]!,
+                          width: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(
+                          "$pm25 mg/m\u00B3",
+                          style: TextStyle(
+                            fontSize: 20,
+                          ),
+                        ),
+                      ))
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Text("Ultima actualización:"),
+              lastUpdated == null
+                  ? CircularProgressIndicator()
+                  : Column(
+                      children: [
+                        Text(
+                            "${lastUpdated!.day}/${lastUpdated!.month}/${lastUpdated!.year} "),
+                        Text(
+                            " ${lastUpdated!.hour}:${lastUpdated!.minute}:${lastUpdated!.second}")
+                      ],
+                    )
             ],
           )
         ],

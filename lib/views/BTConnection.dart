@@ -231,13 +231,13 @@ class _BTConectionSate extends State<BTConection> {
         debugPrint("ID:${nodeSensor.id}");
         if (nodeSensor.id == 0) {
           await subscription!.cancel();
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => NewDevice(device!.id)));
         } else {
           debugPrint("Previous");
           // await getFullCharacteristics();
           await subscription!.cancel();
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
+          Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => ManageDevice(nodeSensor)));
         }
       }

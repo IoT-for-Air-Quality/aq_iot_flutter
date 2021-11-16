@@ -4,40 +4,32 @@ import 'dart:typed_data';
 import 'package:aq_iot_flutter/models/Device.dart';
 import 'package:aq_iot_flutter/models/RouteDevice.dart';
 import 'package:aq_iot_flutter/views/CurrentInfo.dart';
+import 'package:aq_iot_flutter/views/CurrentInfoWeb.dart';
 import 'package:aq_iot_flutter/views/HistoricData.dart';
 import 'package:aq_iot_flutter/views/Route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 
 import 'Route.dart';
 
-class ManageDevice extends StatefulWidget {
+class ManageDeviceWeb extends StatefulWidget {
   final Device device;
-  const ManageDevice(this.device);
+  const ManageDeviceWeb(this.device);
 
   @override
-  _ManageDeviceState createState() => new _ManageDeviceState();
+  _ManageDeviceWebState createState() => new _ManageDeviceWebState();
 }
 
-class _ManageDeviceState extends State<ManageDevice> {
+class _ManageDeviceWebState extends State<ManageDeviceWeb> {
   // Initializing the Bluetooth connection state to be unknown
-  BluetoothState _bluetoothState = BluetoothState.UNKNOWN;
 
   // Get the instance of the Bluetooth
-  FlutterBluetoothSerial _bluetooth = FlutterBluetoothSerial.instance;
 
   // Track the Bluetooth connection with the remote device
-  late BluetoothConnection connection;
 
   // To track whether the device is still connected to Bluetooth
   bool get isConnected => false;
   // connection != null && connection.isConnected;
   bool viewingHistoric = false;
-  bool showWifiAlert = false;
-  bool showDiskAlert = false;
-  bool showBatteryAlert = false;
-  bool showSoftwareAlert = false;
-  bool showHardwareAlert = false;
 
   late int _deviceState;
 
@@ -64,70 +56,14 @@ class _ManageDeviceState extends State<ManageDevice> {
     super.initState();
 
     // Get current state
-    FlutterBluetoothSerial.instance.state.then((state) {
-      setState(() {
-        _bluetoothState = state;
-      });
-    });
 
     _deviceState = 0; // neutral
 
     // If the Bluetooth of the device is not enabled,
     // then request permission to turn on Bluetooth
     // as the app starts up
-    enableBluetooth();
 
     // Listen for further state changes
-    FlutterBluetoothSerial.instance
-        .onStateChanged()
-        .listen((BluetoothState state) {
-      setState(() {
-        _bluetoothState = state;
-
-        // For retrieving the paired devices list
-        getPairedDevices();
-      });
-    });
-  }
-
-  Future<bool> enableBluetooth() async {
-    // Retrieving the current Bluetooth state
-    _bluetoothState = await FlutterBluetoothSerial.instance.state;
-
-    // If the Bluetooth is off, then turn it on first
-    // and then retrieve the devices that are paired.
-    if (_bluetoothState == BluetoothState.STATE_OFF) {
-      await FlutterBluetoothSerial.instance.requestEnable();
-      await getPairedDevices();
-      return true;
-    } else {
-      await getPairedDevices();
-    }
-    return false;
-  }
-
-  List<BluetoothDevice> _devicesList = [];
-
-  Future<void> getPairedDevices() async {
-    List<BluetoothDevice> devices = [];
-
-    // To get the list of paired devices
-    try {
-      devices = await _bluetooth.getBondedDevices();
-    } on Exception {
-      print("Error");
-    }
-
-    // It is an error to call [setState] unless [mounted] is true.
-    if (!mounted) {
-      return;
-    }
-
-    // Store the [devices] list in the [_devicesList] for accessing
-    // the list outside this class
-    setState(() {
-      _devicesList = devices;
-    });
   }
 
   bool isDisconnecting = false;
@@ -135,7 +71,6 @@ class _ManageDeviceState extends State<ManageDevice> {
 
   void _disconnect() async {
     // Closing the Bluetooth connection
-    connection.output.add(utf8.encode("EXIT" + "\r\n") as Uint8List);
     // await connection.close();
     //show('Device disconnected');
     setState(() {
@@ -147,51 +82,6 @@ class _ManageDeviceState extends State<ManageDevice> {
     //     _connected = false;
     //   });
     // }
-  }
-
-  void _connect() async {
-    debugPrint("hola");
-    if (_device == null) {
-      debugPrint('No device selected');
-    } else {
-      if (!isConnected) {
-        // Trying to connect to the device using
-        // its address
-        debugPrint("hi");
-        await BluetoothConnection.toAddress(_device.address)
-            .then((_connection) {
-          print('Connected to the device');
-          connection = _connection;
-
-          // Updating the device connectivity
-          // status to [true]
-          setState(() {
-            _connected = true;
-          });
-
-          // This is for tracking when the disconnecting process
-          // is in progress which uses the [isDisconnecting] variable
-          // defined before.
-          // Whenever we make a disconnection call, this [onDone]
-          // method is fired.
-          connection.input!.listen(_onDataReceived).onDone(() {
-            if (isDisconnecting) {
-              print('Disconnecting locally!');
-            } else {
-              print('Disconnected remotely!');
-            }
-            if (this.mounted) {
-              setState(() {});
-            }
-          });
-        }).catchError((error) {
-          print('Cannot connect, exception occurred');
-          print(error);
-        });
-        debugPrint('Device connected');
-        connection.output.add(utf8.encode("HELLO" + "\r\n") as Uint8List);
-      }
-    }
   }
 
   void closeHistoric() {
@@ -284,45 +174,22 @@ class _ManageDeviceState extends State<ManageDevice> {
   void dispose() {
     if (isConnected) {
       isDisconnecting = true;
-      connection.dispose();
       //connection = null;
     }
 
     super.dispose();
   }
 
-  List<DropdownMenuItem<BluetoothDevice>> _getDeviceItems() {
-    debugPrint("$_device");
-    List<DropdownMenuItem<BluetoothDevice>> items = [];
-    if (_devicesList.isEmpty) {
-      items.add(DropdownMenuItem(
-        child: Text('NONE'),
-      ));
-    } else {
-      _devicesList.forEach((device) {
-        items.add(DropdownMenuItem(
-          child: Text("${device.name}"),
-          value: device,
-        ));
-      });
-    }
-    return items;
-  }
-
   void changeToMobile() {
     setState(() {
       mobile = true;
     });
-
-    connection.output.add(utf8.encode("MOBILE\r\n") as Uint8List);
   }
 
   void changeToStatic() {
     setState(() {
       mobile = false;
     });
-
-    connection.output.add(utf8.encode("STATIC\r\n") as Uint8List);
   }
 
   void editInfo() {
@@ -347,33 +214,16 @@ class _ManageDeviceState extends State<ManageDevice> {
     setState(() {
       infoUpdated = false;
     });
-    connection.output.add(utf8.encode("HELLO" + "\r\n") as Uint8List);
   }
 
-  finish() {
-    Navigator.pop(context);
-  }
+  finish() {}
 
-  restartDevice() {
-    connection.output.add(utf8.encode("RESTART" + "\r\n") as Uint8List);
-  }
+  restartDevice() {}
 
   updateInfo() {
     setState(() {
       infoUpdated = false;
     });
-    if (cId) connection.output.add(utf8.encode(id + ":ID\r\n") as Uint8List);
-    if (cWifiSsid)
-      connection.output
-          .add(utf8.encode(wifiSsid + ":WIFI-SSID\r\n") as Uint8List);
-    if (cWifiPass)
-      connection.output
-          .add(utf8.encode(wifiPass + ":WIFI-PASS\r\n") as Uint8List);
-    if (cIpBroker)
-      connection.output.add(utf8.encode(id + ":IP\r\n") as Uint8List);
-    if (cPort)
-      connection.output.add(utf8.encode(id + ":PORT\r\n") as Uint8List);
-
     setState(() {
       cId = false;
       cWifiSsid = false;
@@ -386,7 +236,6 @@ class _ManageDeviceState extends State<ManageDevice> {
   }
 
   bool _connected = false;
-  late BluetoothDevice _device = BluetoothDevice(address: "");
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -415,244 +264,6 @@ class _ManageDeviceState extends State<ManageDevice> {
                           Container(
                             height: 50,
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = !showWifiAlert;
-                                        showDiskAlert = false;
-                                        showBatteryAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = false;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.wifi_off,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showBatteryAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = false;
-                                        showDiskAlert = !showDiskAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.disc_full,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showDiskAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = false;
-                                        showBatteryAlert = !showBatteryAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.battery_alert,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showDiskAlert = false;
-                                        showBatteryAlert = false;
-                                        showHardwareAlert = false;
-                                        showSoftwareAlert = !showSoftwareAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.warning,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                                GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        showWifiAlert = false;
-                                        showDiskAlert = false;
-                                        showBatteryAlert = false;
-                                        showSoftwareAlert = false;
-                                        showHardwareAlert = !showHardwareAlert;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.settings,
-                                      color: Colors.red,
-                                      size: 30.0,
-                                    )),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              showWifiAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.wifi_off,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Nodo sin conexión a internet',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showDiskAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.disc_full,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Almacenamiento lleno',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showBatteryAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.battery_alert,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Nodo con baja bateria',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showSoftwareAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.warning,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Problema de software',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showHardwareAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.settings,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Problema de hardware',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.all(10.0),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xfffcf4bf),
-                        border: Border.all(
-                          color: Colors.black,
-                          width: 4,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 50,
-                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 Row(
@@ -663,7 +274,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                                       size: 30.0,
                                     ),
                                     Text(
-                                      'Calidad del aire en nodo ${widget.device.id}',
+                                      'Información del dispositivo',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
@@ -673,7 +284,7 @@ class _ManageDeviceState extends State<ManageDevice> {
                               ],
                             ),
                           ),
-                          CurrentInfo(widget.device),
+                          CurrentInfoWeb(widget.device),
                           ElevatedButton(
                               style: ButtonStyle(
                                   shape: MaterialStateProperty.all<
@@ -704,64 +315,6 @@ class _ManageDeviceState extends State<ManageDevice> {
                           viewingHistoric
                               ? HistoricData(widget.device)
                               : Container()
-                        ],
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.all(10.0),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xfffcf4bf),
-                        border: Border.all(
-                          color: Colors.black,
-                          width: 4,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.alt_route,
-                                      color: Colors.green,
-                                      size: 30.0,
-                                    ),
-                                    Text(
-                                      'Nodo movil',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    )
-                                  ],
-                                ),
-                                infoUpdated
-                                    ? Switch(
-                                        value: mobile,
-                                        onChanged: (v) => {
-                                              v
-                                                  ? changeToMobile()
-                                                  : changeToStatic()
-                                            })
-                                    : Container(
-                                        margin: EdgeInsets.all(20),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: CircularProgressIndicator(),
-                                        )),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            margin: EdgeInsets.all(20),
-                            child: Column(
-                                children:
-                                    mobile ? [DeviceRoute(widget.device)] : []),
-                          ),
                         ],
                       ),
                     ),
@@ -1013,6 +566,64 @@ class _ManageDeviceState extends State<ManageDevice> {
                                     padding: const EdgeInsets.all(10.0),
                                     child: CircularProgressIndicator(),
                                   ))
+                        ],
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.all(10.0),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xfffcf4bf),
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 4,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.alt_route,
+                                      color: Colors.green,
+                                      size: 30.0,
+                                    ),
+                                    Text(
+                                      'Nodo movil',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    )
+                                  ],
+                                ),
+                                infoUpdated
+                                    ? Switch(
+                                        value: mobile,
+                                        onChanged: (v) => {
+                                              v
+                                                  ? changeToMobile()
+                                                  : changeToStatic()
+                                            })
+                                    : Container(
+                                        margin: EdgeInsets.all(20),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: CircularProgressIndicator(),
+                                        )),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            margin: EdgeInsets.all(20),
+                            child: Column(
+                                children:
+                                    mobile ? [DeviceRoute(widget.device)] : []),
+                          ),
                         ],
                       ),
                     ),

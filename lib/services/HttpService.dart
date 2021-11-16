@@ -9,8 +9,8 @@ import 'package:http/http.dart';
 import '../models/Organization.dart';
 
 class HttpService {
-  final IP = '192.168.0.4:3000';
-  // final IP = '35.211.127.202:3000';
+  // final IP = '192.168.0.4:3000';
+  final IP = '35.211.127.202:3000';
 
   final orgResource = '/organization';
   final deviceResource = '/device';

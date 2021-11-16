@@ -1,7 +1,9 @@
 import 'package:aq_iot_flutter/models/Device.dart';
 import 'package:aq_iot_flutter/models/Organization.dart';
 import 'package:aq_iot_flutter/services/HttpService.dart';
+import 'package:aq_iot_flutter/views/ManageDeviceWeb.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'ManageDevice.dart';
 
@@ -29,8 +31,9 @@ class _DeviceSelectionState extends State<DeviceSelection> {
   Device? dropdownDevice;
 
   void _selectDevice() {
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => ManageDevice(device)));
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) =>
+            kIsWeb ? ManageDeviceWeb(device) : ManageDevice(device)));
   }
 
   @override
