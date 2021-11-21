@@ -63,7 +63,10 @@ class _DeviceSelectionState extends State<DeviceSelection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Text("Devices from organization"),
+              Padding(
+                padding: EdgeInsets.all(7.5),
+                child: Text("Devices from organization"),
+              )
             ],
           ),
           Row(
@@ -134,7 +137,7 @@ class _DeviceSelectionState extends State<DeviceSelection> {
                     ),
               ElevatedButton(
                 onPressed: _selectDevice,
-                child: Text('Connect'),
+                child: Text('View data'),
               ),
             ],
           )

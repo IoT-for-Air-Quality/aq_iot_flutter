@@ -106,54 +106,30 @@ class _ManageDeviceState extends State<ManageDevice> {
   @override
   void initState() {
     super.initState();
-    QualifiedCharacteristic spiffsTotal = QualifiedCharacteristic(
-        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
-        characteristicId: Uuid.parse("00006001-0000-1000-8000-00805F9B34FB"),
-        deviceId: widget.deviceBT!.id);
+    if (widget.deviceBT != null) {
+      QualifiedCharacteristic spiffsTotal = QualifiedCharacteristic(
+          serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+          characteristicId: Uuid.parse("00006001-0000-1000-8000-00805F9B34FB"),
+          deviceId: widget.deviceBT!.id);
 
-    QualifiedCharacteristic versionSW = QualifiedCharacteristic(
-        serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
-        characteristicId: Uuid.parse("00002A28-0000-1000-8000-00805F9B34FB"),
-        deviceId: widget.deviceBT!.id);
-    BluetoothService().readCharacteristic(spiffsTotal).then((value) {
-      setState(() {
-        deviceSpace = double.parse(value);
+      QualifiedCharacteristic versionSW = QualifiedCharacteristic(
+          serviceId: Uuid.parse("0000180A-0000-1000-8000-00805F9B34FB"),
+          characteristicId: Uuid.parse("00002A28-0000-1000-8000-00805F9B34FB"),
+          deviceId: widget.deviceBT!.id);
+      BluetoothService().readCharacteristic(spiffsTotal).then((value) {
+        setState(() {
+          deviceSpace = double.parse(value);
+        });
       });
-    });
-    BluetoothService().readCharacteristic(versionSW).then((value) {
-      setState(() {
-        swVersion = value;
+      BluetoothService().readCharacteristic(versionSW).then((value) {
+        setState(() {
+          swVersion = value;
+        });
       });
-    });
 
-    timer = Timer.periodic(
-        Duration(seconds: 1), (Timer t) => updateCharacteristics());
-
-    // Get current state
-    FlutterBluetoothSerial.instance.state.then((state) {
-      setState(() {
-        _bluetoothState = state;
-      });
-    });
-
-    _deviceState = 0; // neutral
-
-    // If the Bluetooth of the device is not enabled,
-    // then request permission to turn on Bluetooth
-    // as the app starts up
-    enableBluetooth();
-
-    // Listen for further state changes
-    FlutterBluetoothSerial.instance
-        .onStateChanged()
-        .listen((BluetoothState state) {
-      setState(() {
-        _bluetoothState = state;
-
-        // For retrieving the paired devices list
-        getPairedDevices();
-      });
-    });
+      timer = Timer.periodic(
+          Duration(seconds: 1), (Timer t) => updateCharacteristics());
+    }
   }
 
   Future<bool> enableBluetooth() async {
@@ -466,136 +442,43 @@ class _ManageDeviceState extends State<ManageDevice> {
               : Container(
                   child: Column(
                   children: [
-                    Container(
-                      margin: const EdgeInsets.all(10.0),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xfffcf4bf),
-                        border: Border.all(
-                          color: Colors.black,
-                          width: 4,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 50,
-                            child: wifiStatus == null ||
-                                    usedSpace == null ||
-                                    deviceSpace == null
-                                ? CircularProgressIndicator()
-                                : Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            showWifiAlert = !showWifiAlert;
-                                            showDiskAlert = false;
-                                            showBatteryAlert = false;
-                                            showSoftwareAlert = false;
-                                            showHardwareAlert = false;
-                                          });
-                                        },
-                                        child: wifiStatus! == "Connected"
-                                            ? Icon(
-                                                Icons.wifi,
-                                                color: Colors.green,
-                                                size: 30.0,
-                                              )
-                                            : Icon(
-                                                Icons.wifi_off,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                      ),
-                                      GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              showWifiAlert = false;
-                                              showBatteryAlert = false;
-                                              showSoftwareAlert = false;
-                                              showHardwareAlert = false;
-                                              showDiskAlert = !showDiskAlert;
-                                            });
-                                          },
-                                          child:
-                                              usedSpace! / deviceSpace! > 0.75
-                                                  ? Icon(
-                                                      Icons.disc_full,
-                                                      color: Colors.red,
-                                                      size: 30.0,
-                                                    )
-                                                  : Icon(
-                                                      Icons.storage,
-                                                      color: Colors.green,
-                                                      size: 30.0,
-                                                    )),
-                                      GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              showWifiAlert = false;
-                                              showDiskAlert = false;
-                                              showSoftwareAlert = false;
-                                              showHardwareAlert = false;
-                                              showBatteryAlert =
-                                                  !showBatteryAlert;
-                                            });
-                                          },
-                                          child: Icon(
-                                            Icons.battery_alert,
-                                            color: Colors.red,
-                                            size: 30.0,
-                                          )),
-                                      GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              showWifiAlert = false;
-                                              showDiskAlert = false;
-                                              showBatteryAlert = false;
-                                              showHardwareAlert = false;
-                                              showSoftwareAlert =
-                                                  !showSoftwareAlert;
-                                            });
-                                          },
-                                          child: Icon(
-                                            Icons.warning,
-                                            color: Colors.red,
-                                            size: 30.0,
-                                          )),
-                                      GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              showWifiAlert = false;
-                                              showDiskAlert = false;
-                                              showBatteryAlert = false;
-                                              showSoftwareAlert = false;
-                                              showHardwareAlert =
-                                                  !showHardwareAlert;
-                                            });
-                                          },
-                                          child: Icon(
-                                            Icons.settings,
-                                            color: Colors.red,
-                                            size: 30.0,
-                                          )),
-                                    ],
-                                  ),
-                          ),
-                          Column(
-                            children: [
-                              showWifiAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              wifiStatus! == "Connected"
+                    widget.deviceBT == null
+                        ? Container()
+                        : Container(
+                            margin: const EdgeInsets.all(10.0),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xfffcf4bf),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 4,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  height: 50,
+                                  child: wifiStatus == null ||
+                                          usedSpace == null ||
+                                          deviceSpace == null
+                                      ? CircularProgressIndicator()
+                                      : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  showWifiAlert =
+                                                      !showWifiAlert;
+                                                  showDiskAlert = false;
+                                                  showBatteryAlert = false;
+                                                  showSoftwareAlert = false;
+                                                  showHardwareAlert = false;
+                                                });
+                                              },
+                                              child: wifiStatus! == "Connected"
                                                   ? Icon(
                                                       Icons.wifi,
                                                       color: Colors.green,
@@ -606,170 +489,279 @@ class _ManageDeviceState extends State<ManageDevice> {
                                                       color: Colors.red,
                                                       size: 30.0,
                                                     ),
-                                              wifiStatus! == "Connected"
-                                                  ? Text(
-                                                      '   Señal WiFi ${wifiRSSI}dB',
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold),
-                                                    )
-                                                  : Text(
-                                                      '   Nodo sin conexión a internet',
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold),
-                                                    )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showDiskAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              usedSpace! / deviceSpace! > 0.75
-                                                  ? Icon(
-                                                      Icons.disc_full,
+                                            ),
+                                            GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    showWifiAlert = false;
+                                                    showBatteryAlert = false;
+                                                    showSoftwareAlert = false;
+                                                    showHardwareAlert = false;
+                                                    showDiskAlert =
+                                                        !showDiskAlert;
+                                                  });
+                                                },
+                                                child:
+                                                    usedSpace! / deviceSpace! >
+                                                            0.75
+                                                        ? Icon(
+                                                            Icons.disc_full,
+                                                            color: Colors.red,
+                                                            size: 30.0,
+                                                          )
+                                                        : Icon(
+                                                            Icons.storage,
+                                                            color: Colors.green,
+                                                            size: 30.0,
+                                                          )),
+                                            GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    showWifiAlert = false;
+                                                    showDiskAlert = false;
+                                                    showSoftwareAlert = false;
+                                                    showHardwareAlert = false;
+                                                    showBatteryAlert =
+                                                        !showBatteryAlert;
+                                                  });
+                                                },
+                                                child: Icon(
+                                                  Icons.battery_alert,
+                                                  color: Colors.red,
+                                                  size: 30.0,
+                                                )),
+                                            GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    showWifiAlert = false;
+                                                    showDiskAlert = false;
+                                                    showBatteryAlert = false;
+                                                    showHardwareAlert = false;
+                                                    showSoftwareAlert =
+                                                        !showSoftwareAlert;
+                                                  });
+                                                },
+                                                child: Icon(
+                                                  Icons.warning,
+                                                  color: Colors.red,
+                                                  size: 30.0,
+                                                )),
+                                            GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    showWifiAlert = false;
+                                                    showDiskAlert = false;
+                                                    showBatteryAlert = false;
+                                                    showSoftwareAlert = false;
+                                                    showHardwareAlert =
+                                                        !showHardwareAlert;
+                                                  });
+                                                },
+                                                child: Icon(
+                                                  Icons.settings,
+                                                  color: Colors.red,
+                                                  size: 30.0,
+                                                )),
+                                          ],
+                                        ),
+                                ),
+                                Column(
+                                  children: [
+                                    showWifiAlert
+                                        ? Container(
+                                            height: 50,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceAround,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    wifiStatus! == "Connected"
+                                                        ? Icon(
+                                                            Icons.wifi,
+                                                            color: Colors.green,
+                                                            size: 30.0,
+                                                          )
+                                                        : Icon(
+                                                            Icons.wifi_off,
+                                                            color: Colors.red,
+                                                            size: 30.0,
+                                                          ),
+                                                    wifiStatus! == "Connected"
+                                                        ? Text(
+                                                            '   Señal WiFi ${wifiRSSI}dB',
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                          )
+                                                        : Text(
+                                                            '   Nodo sin conexión a internet',
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                          )
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Container(),
+                                    showDiskAlert
+                                        ? Container(
+                                            height: 50,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceAround,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    usedSpace! / deviceSpace! >
+                                                            0.75
+                                                        ? Icon(
+                                                            Icons.disc_full,
+                                                            color: Colors.red,
+                                                            size: 30.0,
+                                                          )
+                                                        : Icon(
+                                                            Icons.storage,
+                                                            color: Colors.green,
+                                                            size: 30.0,
+                                                          ),
+                                                    usedSpace! / deviceSpace! >
+                                                            0.75
+                                                        ? Text(
+                                                            '   Almacenamiento casi lleno',
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                          )
+                                                        : Column(
+                                                            children: [
+                                                              Text(
+                                                                '',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 10,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                '   Memoria total: ${deviceSpace! / 1000}KB',
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              ),
+                                                              Text(
+                                                                '   Memoria usada: ${usedSpace! / 1000}KB',
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              )
+                                                            ],
+                                                          )
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Container(),
+                                    showBatteryAlert
+                                        ? Container(
+                                            height: 50,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceAround,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.battery_alert,
                                                       color: Colors.red,
                                                       size: 30.0,
-                                                    )
-                                                  : Icon(
-                                                      Icons.storage,
-                                                      color: Colors.green,
-                                                      size: 30.0,
                                                     ),
-                                              usedSpace! / deviceSpace! > 0.75
-                                                  ? Text(
-                                                      '   Almacenamiento casi lleno',
+                                                    Text(
+                                                      '   Nodo con baja bateria',
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold),
                                                     )
-                                                  : Column(
-                                                      children: [
-                                                        Text(
-                                                          '',
-                                                          style: TextStyle(
-                                                            fontSize: 10,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          '   Memoria total: ${deviceSpace! / 1000}KB',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                        ),
-                                                        Text(
-                                                          '   Memoria usada: ${usedSpace! / 1000}KB',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                        )
-                                                      ],
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Container(),
+                                    showSoftwareAlert
+                                        ? Container(
+                                            height: 50,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceAround,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.warning,
+                                                      color: Colors.red,
+                                                      size: 30.0,
+                                                    ),
+                                                    Text(
+                                                      '   Problema de software',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold),
                                                     )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showBatteryAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.battery_alert,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Nodo con baja bateria',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showSoftwareAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.warning,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Problema de software',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                              showHardwareAlert
-                                  ? Container(
-                                      height: 50,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.settings,
-                                                color: Colors.red,
-                                                size: 30.0,
-                                              ),
-                                              Text(
-                                                '   Problema de hardware',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Container(),
+                                    showHardwareAlert
+                                        ? Container(
+                                            height: 50,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceAround,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.settings,
+                                                      color: Colors.red,
+                                                      size: 30.0,
+                                                    ),
+                                                    Text(
+                                                      '   Problema de hardware',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    )
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Container(),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
                     Container(
                       margin: const EdgeInsets.all(10.0),
                       alignment: Alignment.center,
@@ -898,305 +890,341 @@ class _ManageDeviceState extends State<ManageDevice> {
                         ],
                       ),
                     ),
-                    Container(
-                      margin: const EdgeInsets.all(10.0),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xfffcf4bf),
-                        border: Border.all(
-                          color: Colors.black,
-                          width: 4,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    widget.deviceBT == null
+                        ? Container()
+                        : Container(
+                            margin: const EdgeInsets.all(10.0),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xfffcf4bf),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 4,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
                               children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: Colors.green,
-                                      size: 30.0,
-                                    ),
-                                    Text(
-                                      'Configuración del dispositivo',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    )
-                                  ],
+                                Container(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.info_outline,
+                                            color: Colors.green,
+                                            size: 30.0,
+                                          ),
+                                          Text(
+                                            'Configuración del dispositivo',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          )
+                                        ],
+                                      ),
+                                      ElevatedButton(
+                                          style: ButtonStyle(
+                                              shape: MaterialStateProperty.all<
+                                                      RoundedRectangleBorder>(
+                                                  RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(25.0),
+                                          ))),
+                                          onPressed: () => {
+                                                editingInfo
+                                                    ? cancelEdit()
+                                                    : editInfo()
+                                              },
+                                          child: Icon(editingInfo
+                                              ? Icons.close
+                                              : Icons.edit))
+                                    ],
+                                  ),
                                 ),
-                                ElevatedButton(
-                                    style: ButtonStyle(
-                                        shape: MaterialStateProperty.all<
-                                                RoundedRectangleBorder>(
-                                            RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(25.0),
-                                    ))),
-                                    onPressed: () => {
-                                          editingInfo
-                                              ? cancelEdit()
-                                              : editInfo()
-                                        },
-                                    child: Icon(
-                                        editingInfo ? Icons.close : Icons.edit))
+                                infoUpdated
+                                    ? Container(
+                                        margin: EdgeInsets.all(0),
+                                        color: Colors.amberAccent,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: Column(
+                                            children: [
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(10),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceAround,
+                                                  children: [
+                                                    Text("ID"),
+                                                    Container(
+                                                      width: 200,
+                                                      height: 25,
+                                                      child: editingInfo
+                                                          ? TextField(
+                                                              onChanged:
+                                                                  (value) => {
+                                                                        setState(
+                                                                            () {
+                                                                          widget
+                                                                              .device
+                                                                              .id = value as int;
+                                                                          cId =
+                                                                              true;
+                                                                        })
+                                                                      },
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                                labelText: "id",
+                                                              ))
+                                                          : Text(
+                                                              "${widget.device.id}"),
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(10.0),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceAround,
+                                                  children: [
+                                                    Text("Wi-Fi ssid"),
+                                                    Container(
+                                                      width: 200,
+                                                      height: 25,
+                                                      child: editingInfo
+                                                          ? TextField(
+                                                              onChanged:
+                                                                  (value) => {
+                                                                        setState(
+                                                                            () {
+                                                                          widget
+                                                                              .device
+                                                                              .wifiSSID = value;
+                                                                          cWifiSsid =
+                                                                              true;
+                                                                        })
+                                                                      },
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                                labelText:
+                                                                    "ssid",
+                                                              ))
+                                                          : Text(widget
+                                                              .device.wifiSSID),
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(10.0),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceAround,
+                                                  children: [
+                                                    Text("Wi-Fi pass"),
+                                                    Container(
+                                                      width: 200,
+                                                      height: 25,
+                                                      child: editingInfo
+                                                          ? TextField(
+                                                              onChanged:
+                                                                  (value) => {
+                                                                        setState(
+                                                                            () {
+                                                                          widget
+                                                                              .device
+                                                                              .wifiPASS = value;
+                                                                          cWifiPass =
+                                                                              true;
+                                                                        })
+                                                                      },
+                                                              obscureText: true,
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                                labelText:
+                                                                    "password",
+                                                              ))
+                                                          : Text(widget
+                                                              .device.wifiPASS),
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(10.0),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceAround,
+                                                  children: [
+                                                    Text("Node type"),
+                                                    Container(
+                                                      width: 200,
+                                                      height: 25,
+                                                      child: editingInfo
+                                                          ? TextField(
+                                                              onChanged:
+                                                                  (value) => {
+                                                                        setState(
+                                                                            () {
+                                                                          ipBroker =
+                                                                              value;
+                                                                          cIpBroker =
+                                                                              true;
+                                                                        })
+                                                                      },
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                                labelText:
+                                                                    "ip broker",
+                                                              ))
+                                                          : Text(widget
+                                                              .device.type),
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(10.0),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceAround,
+                                                  children: [
+                                                    Text("Port"),
+                                                    Container(
+                                                      width: 200,
+                                                      height: 25,
+                                                      child: editingInfo
+                                                          ? TextField(
+                                                              onChanged:
+                                                                  (value) => {
+                                                                        setState(
+                                                                            () {
+                                                                          port =
+                                                                              value;
+                                                                          cPort =
+                                                                              true;
+                                                                        })
+                                                                      },
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                                labelText:
+                                                                    "port",
+                                                              ))
+                                                          : Text(port),
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
+                                              editingInfo
+                                                  ? ElevatedButton(
+                                                      onPressed: () =>
+                                                          {updateInfo()},
+                                                      child: Container(
+                                                        width: 100,
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceEvenly,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.save,
+                                                              color:
+                                                                  Colors.white,
+                                                              size: 30.0,
+                                                            ),
+                                                            Text('Actualizar')
+                                                          ],
+                                                        ),
+                                                      ))
+                                                  : Container(),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
+                                        margin: EdgeInsets.all(20),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: CircularProgressIndicator(),
+                                        ))
                               ],
                             ),
                           ),
-                          infoUpdated
-                              ? Container(
-                                  margin: EdgeInsets.all(0),
-                                  color: Colors.amberAccent,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10.0),
+                    widget.deviceBT == null
+                        ? Container()
+                        : Container(
+                            margin: const EdgeInsets.all(10.0),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xfffcf4bf),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 4,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.upgrade,
+                                            color: Colors.green,
+                                            size: 30.0,
+                                          ),
+                                          Text(
+                                            'Actualización de software',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          )
+                                        ],
+                                      )
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                    margin: EdgeInsets.all(20),
                                     child: Column(
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(10),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              Text("ID"),
-                                              Container(
-                                                width: 200,
-                                                height: 25,
-                                                child: editingInfo
-                                                    ? TextField(
-                                                        onChanged: (value) => {
-                                                              setState(() {
-                                                                widget.device
-                                                                        .id =
-                                                                    value
-                                                                        as int;
-                                                                cId = true;
-                                                              })
-                                                            },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          border:
-                                                              OutlineInputBorder(),
-                                                          labelText: "id",
-                                                        ))
-                                                    : Text(
-                                                        "${widget.device.id}"),
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              Text("Wi-Fi ssid"),
-                                              Container(
-                                                width: 200,
-                                                height: 25,
-                                                child: editingInfo
-                                                    ? TextField(
-                                                        onChanged: (value) => {
-                                                              setState(() {
-                                                                widget.device
-                                                                        .wifiSSID =
-                                                                    value;
-                                                                cWifiSsid =
-                                                                    true;
-                                                              })
-                                                            },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          border:
-                                                              OutlineInputBorder(),
-                                                          labelText: "ssid",
-                                                        ))
-                                                    : Text(
-                                                        widget.device.wifiSSID),
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              Text("Wi-Fi pass"),
-                                              Container(
-                                                width: 200,
-                                                height: 25,
-                                                child: editingInfo
-                                                    ? TextField(
-                                                        onChanged: (value) => {
-                                                              setState(() {
-                                                                widget.device
-                                                                        .wifiPASS =
-                                                                    value;
-                                                                cWifiPass =
-                                                                    true;
-                                                              })
-                                                            },
-                                                        obscureText: true,
-                                                        decoration:
-                                                            InputDecoration(
-                                                          border:
-                                                              OutlineInputBorder(),
-                                                          labelText: "password",
-                                                        ))
-                                                    : Text(
-                                                        widget.device.wifiPASS),
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              Text("Node type"),
-                                              Container(
-                                                width: 200,
-                                                height: 25,
-                                                child: editingInfo
-                                                    ? TextField(
-                                                        onChanged: (value) => {
-                                                              setState(() {
-                                                                ipBroker =
-                                                                    value;
-                                                                cIpBroker =
-                                                                    true;
-                                                              })
-                                                            },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          border:
-                                                              OutlineInputBorder(),
-                                                          labelText:
-                                                              "ip broker",
-                                                        ))
-                                                    : Text(widget.device.type),
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              Text("Port"),
-                                              Container(
-                                                width: 200,
-                                                height: 25,
-                                                child: editingInfo
-                                                    ? TextField(
-                                                        onChanged: (value) => {
-                                                              setState(() {
-                                                                port = value;
-                                                                cPort = true;
-                                                              })
-                                                            },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          border:
-                                                              OutlineInputBorder(),
-                                                          labelText: "port",
-                                                        ))
-                                                    : Text(port),
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                        editingInfo
-                                            ? ElevatedButton(
-                                                onPressed: () => {updateInfo()},
-                                                child: Container(
-                                                  width: 100,
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceEvenly,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.save,
-                                                        color: Colors.white,
-                                                        size: 30.0,
-                                                      ),
-                                                      Text('Actualizar')
-                                                    ],
-                                                  ),
-                                                ))
-                                            : Container(),
+                                        swVersion == null
+                                            ? CircularProgressIndicator()
+                                            : Text("$swVersion")
+                                        // Text("No hay actualizaciones disponibles")
                                       ],
-                                    ),
-                                  ),
-                                )
-                              : Container(
-                                  margin: EdgeInsets.all(20),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: CircularProgressIndicator(),
-                                  ))
-                        ],
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.all(10.0),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xfffcf4bf),
-                        border: Border.all(
-                          color: Colors.black,
-                          width: 4,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.upgrade,
-                                      color: Colors.green,
-                                      size: 30.0,
-                                    ),
-                                    Text(
-                                      'Actualización de software',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    )
-                                  ],
-                                )
+                                    ))
                               ],
                             ),
                           ),
-                          Container(
-                              margin: EdgeInsets.all(20),
-                              child: Column(
-                                children: [
-                                  swVersion == null
-                                      ? CircularProgressIndicator()
-                                      : Text("$swVersion")
-                                  // Text("No hay actualizaciones disponibles")
-                                ],
-                              ))
-                        ],
-                      ),
-                    ),
                     Container(
                         margin: const EdgeInsets.all(10.0),
                         alignment: Alignment.center,

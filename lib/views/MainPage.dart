@@ -1,5 +1,6 @@
 import 'package:aq_iot_flutter/views/BTConnection.dart';
 import 'package:aq_iot_flutter/views/DeviceSelection.dart';
+import 'package:aq_iot_flutter/views/Network.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -22,6 +23,7 @@ class _MainPageState extends State<MainPage> {
           children: [
             kIsWeb ? Container() : BTConection(),
             DeviceSelection(),
+            Network()
           ],
         ),
       ),
