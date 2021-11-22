@@ -30,18 +30,79 @@ class HttpService {
   }
 
   Future<List<Device>> getDevicesOrganization(int organization) async {
-    final queryParameters = {
-      'org': "${organization}",
-    };
-    final uri = Uri.http(IP, deviceResource, queryParameters);
-    final response = await get(uri);
-    debugPrint("${uri}");
-    debugPrint("${response.body}");
-    if (response.statusCode == 200) {
-      return Device.getDevices(jsonDecode(response.body) as List);
+    List<Device> devices = [];
+    if (organization == 0) {
+      List<Organization> organizations = await getOrganizations();
+      for (var org in organizations) {
+        final queryParameters = {
+          'org': "${org.id}",
+        };
+        final uri = Uri.http(IP, deviceResource, queryParameters);
+        final response = await get(uri);
+        debugPrint("${uri}");
+        debugPrint("${response.body}");
+        if (response.statusCode == 200) {
+          devices.addAll(Device.getDevices(jsonDecode(response.body) as List));
+        } else {
+          throw Exception('Failed to load organizations');
+        }
+      }
     } else {
-      throw Exception('Failed to load organizations');
+      final queryParameters = {
+        'org': "${organization}",
+      };
+      final uri = Uri.http(IP, deviceResource, queryParameters);
+      final response = await get(uri);
+      debugPrint("${uri}");
+      debugPrint("${response.body}");
+      if (response.statusCode == 200) {
+        return Device.getDevices(jsonDecode(response.body) as List);
+      } else {
+        throw Exception('Failed to load organizations');
+      }
     }
+    return devices;
+  }
+
+  Future<List<Device>> getDevicesOrganizationData(
+      int organization, String startDate, String endDate) async {
+    debugPrint("heloooo");
+    List<Device> devices = [];
+    if (organization == 0) {
+      List<Organization> organizations = await getOrganizations();
+      for (var org in organizations) {
+        final queryParameters = {
+          'org': "${org.id}",
+          'startDate': "${startDate}",
+          'endDate': "${endDate}",
+        };
+        final uri = Uri.http(IP, deviceResource, queryParameters);
+        final response = await get(uri);
+        debugPrint("${uri}");
+        debugPrint("${response.body}");
+        if (response.statusCode == 200) {
+          devices.addAll(Device.getDevices(jsonDecode(response.body) as List));
+        } else {
+          throw Exception('Failed to load organizations');
+        }
+      }
+    } else {
+      final queryParameters = {
+        'org': "${organization}",
+        'startDate': "${startDate}",
+        'endDate': "${endDate}",
+      };
+      final uri = Uri.http(IP, deviceResource, queryParameters);
+      final response = await get(uri);
+      debugPrint("${uri}");
+      debugPrint("${response.body}");
+      if (response.statusCode == 200) {
+        return Device.getDevices(jsonDecode(response.body) as List);
+      } else {
+        throw Exception('Failed to load organizations');
+      }
+    }
+    return devices;
   }
 
   Future<List<Variable>> getVariables() async {

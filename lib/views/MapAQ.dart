@@ -1,8 +1,15 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui';
 
+import 'package:aq_iot_flutter/models/Device.dart';
+import 'package:aq_iot_flutter/models/Measurement.dart';
 import 'package:aq_iot_flutter/models/Organization.dart';
 import 'package:aq_iot_flutter/services/HttpService.dart';
+import 'package:aq_iot_flutter/utils/Points.dart';
+import 'package:aq_iot_flutter/views/ManageDevice.dart';
 import 'package:date_format/date_format.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -15,6 +22,21 @@ class MapAQ extends StatefulWidget {
 }
 
 class _MapAQState extends State<MapAQ> {
+  Future<BitmapDescriptor> _myPainterToBitmap(
+      double max, double min, double value) async {
+    PictureRecorder recorder = new PictureRecorder();
+    final canvas = new Canvas(recorder);
+    MyPoints myPoints = new MyPoints(max, min, value);
+    myPoints.paint(canvas, Size(20, 20));
+    final image = await recorder.endRecording().toImage(20, 20);
+    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
+  }
+
+  late BitmapDescriptor pinLocationIcon;
+  List<Measurement>? measurements;
+  List<Device>? devices;
+
   double latitude = 4.634335;
 
   double longitude = -74.113644;
@@ -23,10 +45,10 @@ class _MapAQState extends State<MapAQ> {
 
   String nodesTypes = "Estáticos";
 
-  String variable = "CO";
+  int variable = 1;
 
   List<Organization>? organizations;
-  Organization? dropdownValue;
+  Organization? currentOrganizarion;
 
   String? _setDate;
 
@@ -46,6 +68,8 @@ class _MapAQState extends State<MapAQ> {
         selectedDate = picked;
         _dateController.text =
             formatDate(selectedDate, [yyyy, '-', mm, '-', dd]);
+        _updateGraph();
+        updateMap();
       });
   }
 
@@ -101,8 +125,107 @@ class _MapAQState extends State<MapAQ> {
   @override
   void initState() {
     super.initState();
+    BitmapDescriptor.fromAssetImage(
+            ImageConfiguration(devicePixelRatio: 2.5), 'assets/morado.png')
+        .then((onValue) {
+      pinLocationIcon = onValue;
+    });
+    setState(() {
+      _setDate = formatDate(selectedDate, [yyyy, '-', mm, '-', dd]);
+    });
+
+    selectedDate = DateTime(selectedDate.year, selectedDate.month,
+        selectedDate.day, _currentRangeValues.start.toInt(), 0);
+    selectedDateEnd = DateTime(selectedDate.year, selectedDate.month,
+        selectedDate.day, _currentRangeValues.end.toInt(), 0);
+    HttpService()
+        .getDevicesOrganizationData(0, selectedDate.toIso8601String(),
+            selectedDateEnd.toIso8601String())
+        .then((value) {
+      setState(() {
+        value.removeWhere((element) => element.promCO == null);
+        devices = [];
+
+        if (value.length > 0) {
+          Device max = value.reduce((a, b) => a.promCO! > b.promCO! ? a : b);
+          Device min = value.reduce((a, b) => a.promCO! < b.promCO! ? a : b);
+          devices = [];
+          if (max != null) {
+            for (var item in value) {
+              _myPainterToBitmap(max.promCO!, min.promCO!, item.promCO!)
+                  .then((v) {
+                item.bm = v;
+                devices!.add(item);
+              });
+            }
+          }
+        }
+
+        // devices = value;
+      });
+    });
+
     HttpService().getOrganizations().then((value) {
-      setState(() => {organizations = value});
+      setState(() {
+        organizations = value;
+        organizations!.add(Organization(id: 0, name: 'Todas'));
+        currentOrganizarion = organizations!.last;
+      });
+    });
+  }
+
+  RangeValues _currentRangeValues = const RangeValues(0, 24);
+
+  void updateMap() {
+    selectedDate = DateTime(selectedDate.year, selectedDate.month,
+        selectedDate.day, _currentRangeValues.start.toInt(), 0);
+    selectedDateEnd = DateTime(selectedDate.year, selectedDate.month,
+        selectedDate.day, _currentRangeValues.end.toInt(), 0);
+
+    HttpService()
+      ..getDevicesOrganizationData(currentOrganizarion!.id,
+              selectedDate.toIso8601String(), selectedDateEnd.toIso8601String())
+          .then((value) {
+        setState(() {
+          value.removeWhere((element) => element.promCO == null);
+          devices = [];
+
+          if (value.length > 0) {
+            Device max = value.reduce((a, b) => a.promCO! > b.promCO! ? a : b);
+            Device min = value.reduce((a, b) => a.promCO! < b.promCO! ? a : b);
+            devices = [];
+            if (max != null) {
+              for (var item in value) {
+                _myPainterToBitmap(max.promCO!, min.promCO!, item.promCO!)
+                    .then((v) {
+                  item.bm = v;
+                  devices!.add(item);
+                });
+              }
+            }
+          }
+
+          // devices = value;
+        });
+      });
+  }
+
+  DateTime selectedDateEnd = DateTime.now();
+  int currentNodeId = 0;
+
+  void _updateGraph() {
+    selectedDate = DateTime(selectedDate.year, selectedDate.month,
+        selectedDate.day, _currentRangeValues.start.toInt(), 0);
+    selectedDateEnd = DateTime(selectedDate.year, selectedDate.month,
+        selectedDate.day, _currentRangeValues.end.toInt(), 0);
+    HttpService()
+        .getMeasurements(currentNodeId, selectedDate.toIso8601String(),
+            selectedDateEnd.toIso8601String())
+        .then((value) {
+      setState(() {
+        value.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        measurements = value;
+      });
     });
   }
 
@@ -208,10 +331,10 @@ class _MapAQState extends State<MapAQ> {
               ListTile(
                 visualDensity: VisualDensity(horizontal: 0, vertical: -4),
                 title: Text("CO"),
-                leading: Radio<String>(
-                  value: "CO",
+                leading: Radio<int>(
+                  value: 1,
                   groupValue: variable,
-                  onChanged: (String? value) {
+                  onChanged: (int? value) {
                     setState(() {
                       variable = value!;
                     });
@@ -220,11 +343,11 @@ class _MapAQState extends State<MapAQ> {
               ),
               ListTile(
                 visualDensity: VisualDensity(horizontal: 0, vertical: -4),
-                title: Text("CO2"),
-                leading: Radio<String>(
-                  value: "CO2",
+                title: Text("CO\u2082"),
+                leading: Radio<int>(
+                  value: 2,
                   groupValue: variable,
-                  onChanged: (String? value) {
+                  onChanged: (int? value) {
                     setState(() {
                       variable = value!;
                     });
@@ -234,10 +357,10 @@ class _MapAQState extends State<MapAQ> {
               ListTile(
                 visualDensity: VisualDensity(horizontal: 0, vertical: -4),
                 title: Text("PM 2.5"),
-                leading: Radio<String>(
-                  value: "PM 2.5",
+                leading: Radio<int>(
+                  value: 3,
                   groupValue: variable,
-                  onChanged: (String? value) {
+                  onChanged: (int? value) {
                     setState(() {
                       variable = value!;
                     });
@@ -253,7 +376,7 @@ class _MapAQState extends State<MapAQ> {
               organizations == null
                   ? CircularProgressIndicator()
                   : DropdownButton<Organization>(
-                      value: dropdownValue,
+                      value: currentOrganizarion,
                       icon: const Icon(Icons.arrow_downward),
                       iconSize: 24,
                       elevation: 16,
@@ -264,7 +387,8 @@ class _MapAQState extends State<MapAQ> {
                       ),
                       onChanged: (Organization? newValue) {
                         setState(() {
-                          dropdownValue = newValue!;
+                          currentOrganizarion = newValue!;
+                          updateMap();
                         });
                       },
                       items: organizations!.map<DropdownMenuItem<Organization>>(
@@ -325,12 +449,129 @@ class _MapAQState extends State<MapAQ> {
           child: Column(
             children: [
               Container(
-                height: 500,
-                child: GoogleMap(
-                    myLocationEnabled: true,
-                    initialCameraPosition: CameraPosition(
-                        zoom: 11.0746, target: LatLng(latitude, longitude))),
-              )
+                height: 450,
+                child: devices == null
+                    ? Padding(
+                        padding: EdgeInsets.only(top: 150, bottom: 150),
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(),
+                            Text(''),
+                            Text('Cargando mapa...')
+                          ],
+                        ))
+                    : GoogleMap(
+                        onTap: (LatLng lng) {
+                          setState(() {
+                            measurements = null;
+                          });
+                        },
+                        markers: devices!
+                            .map((e) => Marker(
+                                  onTap: () {
+                                    setState(() {
+                                      currentNodeId = e.id;
+                                      _updateGraph();
+                                    });
+                                  },
+                                  icon: e.bm == null ? pinLocationIcon : e.bm!,
+                                  markerId: MarkerId(e.id.toString()),
+                                  position: LatLng(e.lat, e.long),
+                                  infoWindow: InfoWindow(
+                                      title: e.id.toString(),
+                                      snippet: variable == 1
+                                          ? " CO: ${e.promCO!.toStringAsFixed(2)}"
+                                          : variable == 2
+                                              ? " CO\u2082: ${e.promCO2!.toStringAsFixed(2)}"
+                                              : " PM 2.5: ${e.promPM!.toStringAsFixed(2)}",
+                                      onTap: () {
+                                        Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ManageDevice(e, null)));
+                                      }),
+                                ))
+                            .toSet(),
+                        myLocationEnabled: true,
+                        initialCameraPosition: CameraPosition(
+                            zoom: 11.0746,
+                            target: LatLng(latitude, longitude))),
+              ),
+              RangeSlider(
+                values: _currentRangeValues,
+                min: 0,
+                max: 24,
+                divisions: 24,
+                labels: RangeLabels(
+                    _currentRangeValues.start < 12
+                        ? "${_currentRangeValues.start.round()}:00 am"
+                        : _currentRangeValues.start == 12
+                            ? "${_currentRangeValues.start.round()}:00 m"
+                            : "${_currentRangeValues.start.round() - 12}:00 pm",
+                    _currentRangeValues.end < 12
+                        ? "${_currentRangeValues.end.round()}:00 am"
+                        : _currentRangeValues.end == 12
+                            ? "${_currentRangeValues.end.round()}:00 m"
+                            : "${_currentRangeValues.end.round() - 12}:00 pm"),
+                onChanged: (RangeValues values) {
+                  setState(() {
+                    _currentRangeValues = values;
+                    _updateGraph();
+                    updateMap();
+                  });
+                },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Icon(Icons.access_alarms),
+                  Icon(Icons.brightness_5),
+                  Icon(Icons.nights_stay_outlined)
+                ],
+              ),
+              measurements == null
+                  ? SizedBox(
+                      height: 200,
+                      child: Center(
+                          child: Padding(
+                        padding: EdgeInsets.all(70),
+                        child: Text(
+                          "Selecciona un nodo para visualizar la gráfica a detalle",
+                          textAlign: TextAlign.center,
+                        ),
+                      )),
+                    )
+                  : measurements!.length < 1
+                      ? SizedBox(
+                          height: 200,
+                          child: Center(
+                              child: Padding(
+                            padding: EdgeInsets.all(70),
+                            child: Text(
+                              "No hay datos para visualizar",
+                              textAlign: TextAlign.center,
+                            ),
+                          )),
+                        )
+                      : SizedBox(
+                          height: 200,
+                          child: Container(
+                            margin: EdgeInsets.only(top: 20, bottom: 20),
+                            child: LineChart(
+                              LineChartData(lineBarsData: [
+                                LineChartBarData(
+                                    spots: measurements!
+                                        .where((element) =>
+                                            element.variable == variable)
+                                        .toList()
+                                        .map((e) => FlSpot(
+                                            e.timestamp.millisecondsSinceEpoch
+                                                .toDouble(),
+                                            e.value))
+                                        .toList())
+                              ]),
+                            ),
+                          )),
             ],
           ),
         ));
