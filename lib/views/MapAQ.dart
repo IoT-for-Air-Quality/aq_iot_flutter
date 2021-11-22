@@ -37,6 +37,8 @@ class _MapAQState extends State<MapAQ> {
   List<Measurement>? measurements;
   List<Device>? devices;
 
+  bool isUpdatingMap = false;
+
   double latitude = 4.634335;
 
   double longitude = -74.113644;
@@ -177,6 +179,9 @@ class _MapAQState extends State<MapAQ> {
   RangeValues _currentRangeValues = const RangeValues(0, 24);
 
   void updateMap() {
+    setState(() {
+      isUpdatingMap = true;
+    });
     selectedDate = DateTime(selectedDate.year, selectedDate.month,
         selectedDate.day, _currentRangeValues.start.toInt(), 0);
     selectedDateEnd = DateTime(selectedDate.year, selectedDate.month,
@@ -204,7 +209,7 @@ class _MapAQState extends State<MapAQ> {
               }
             }
           }
-
+          isUpdatingMap = false;
           // devices = value;
         });
       });
@@ -449,54 +454,90 @@ class _MapAQState extends State<MapAQ> {
           child: Column(
             children: [
               Container(
-                height: 450,
-                child: devices == null
-                    ? Padding(
-                        padding: EdgeInsets.only(top: 150, bottom: 150),
-                        child: Column(
+                  height: 450,
+                  child: devices == null
+                      ? Padding(
+                          padding: EdgeInsets.only(top: 150, bottom: 150),
+                          child: Column(
+                            children: [
+                              CircularProgressIndicator(),
+                              Text(''),
+                              Text('Cargando mapa...')
+                            ],
+                          ))
+                      : Stack(
                           children: [
-                            CircularProgressIndicator(),
-                            Text(''),
-                            Text('Cargando mapa...')
+                            GoogleMap(
+                                onTap: (LatLng lng) {
+                                  setState(() {
+                                    measurements = null;
+                                  });
+                                },
+                                markers: devices!
+                                    .map((e) => Marker(
+                                          onTap: () {
+                                            setState(() {
+                                              currentNodeId = e.id;
+                                              _updateGraph();
+                                            });
+                                          },
+                                          icon: e.bm == null
+                                              ? pinLocationIcon
+                                              : e.bm!,
+                                          markerId: MarkerId(e.id.toString()),
+                                          position: LatLng(e.lat, e.long),
+                                          infoWindow: InfoWindow(
+                                              title: e.id.toString(),
+                                              snippet: variable == 1
+                                                  ? " CO: ${e.promCO!.toStringAsFixed(2)}"
+                                                  : variable == 2
+                                                      ? " CO\u2082: ${e.promCO2!.toStringAsFixed(2)}"
+                                                      : " PM 2.5: ${e.promPM!.toStringAsFixed(2)}",
+                                              onTap: () {
+                                                Navigator.of(context)
+                                                    .pushReplacement(
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                ManageDevice(
+                                                                    e, null)));
+                                              }),
+                                        ))
+                                    .toSet(),
+                                myLocationEnabled: true,
+                                initialCameraPosition: CameraPosition(
+                                    zoom: 11.0746,
+                                    target: LatLng(latitude, longitude))),
+                            isUpdatingMap
+                                ? Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    left: 0,
+                                    child: Container(
+                                        height: 450,
+                                        decoration: BoxDecoration(
+                                            color: Color.fromRGBO(0, 0, 0,
+                                                0.5) // I played with different colors code for get transparency of color but Alway display White.
+                                            ),
+                                        child: Padding(
+                                            padding: EdgeInsets.only(top: 200),
+                                            child: Center(
+                                              child: Column(
+                                                children: [
+                                                  CircularProgressIndicator(
+                                                    color: Colors.white,
+                                                  ),
+                                                  Text("Actualizando mapa...",
+                                                      style: TextStyle(
+                                                        fontSize: 30,
+                                                        color: Colors.white,
+                                                      )),
+                                                ],
+                                              ),
+                                            ))),
+                                  )
+                                : Container()
                           ],
-                        ))
-                    : GoogleMap(
-                        onTap: (LatLng lng) {
-                          setState(() {
-                            measurements = null;
-                          });
-                        },
-                        markers: devices!
-                            .map((e) => Marker(
-                                  onTap: () {
-                                    setState(() {
-                                      currentNodeId = e.id;
-                                      _updateGraph();
-                                    });
-                                  },
-                                  icon: e.bm == null ? pinLocationIcon : e.bm!,
-                                  markerId: MarkerId(e.id.toString()),
-                                  position: LatLng(e.lat, e.long),
-                                  infoWindow: InfoWindow(
-                                      title: e.id.toString(),
-                                      snippet: variable == 1
-                                          ? " CO: ${e.promCO!.toStringAsFixed(2)}"
-                                          : variable == 2
-                                              ? " CO\u2082: ${e.promCO2!.toStringAsFixed(2)}"
-                                              : " PM 2.5: ${e.promPM!.toStringAsFixed(2)}",
-                                      onTap: () {
-                                        Navigator.of(context).pushReplacement(
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ManageDevice(e, null)));
-                                      }),
-                                ))
-                            .toSet(),
-                        myLocationEnabled: true,
-                        initialCameraPosition: CameraPosition(
-                            zoom: 11.0746,
-                            target: LatLng(latitude, longitude))),
-              ),
+                        )),
               RangeSlider(
                 values: _currentRangeValues,
                 min: 0,

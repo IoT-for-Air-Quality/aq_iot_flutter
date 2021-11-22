@@ -17,6 +17,8 @@ class HttpService {
   final variableResource = '/variable';
   final routeResource = '/route';
   final measurementResource = '/measurement';
+
+  final infoResource = '/AQ';
   Future<List<Organization>> getOrganizations() async {
     debugPrint("hfwjkh");
 
@@ -192,6 +194,25 @@ class HttpService {
       return Measurement.getMeasurements(jsonDecode(response.body) as List);
     } else {
       throw Exception('Failed to load variables');
+    }
+  }
+
+  //AQ
+  Future<List<Device>> getInfoAQ(
+      double latitude, double longitude, double radius) async {
+    final queryParameters = {
+      'latitude': "${latitude}",
+      'longitude': "${longitude}",
+      'radius': "${radius}",
+    };
+    final uri = Uri.http(IP, infoResource, queryParameters);
+    final response = await get(uri);
+    debugPrint("${uri}");
+    debugPrint("${response.body}");
+    if (response.statusCode == 200) {
+      return Device.getDevices(jsonDecode(response.body) as List);
+    } else {
+      throw Exception('Failed to load devices');
     }
   }
 }

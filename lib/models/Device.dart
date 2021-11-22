@@ -15,6 +15,7 @@ class Device {
   double? promCO2;
   double? promPM;
   BitmapDescriptor? bm;
+  double? distance;
 
   Device(
       {required this.id,
@@ -29,7 +30,8 @@ class Device {
       this.promCO,
       this.promCO2,
       this.promPM,
-      this.bm});
+      this.bm,
+      this.distance});
 
   factory Device.fromJson(Map<String, dynamic> json) {
     debugPrint("${json['promedioCO'] == null}");
@@ -54,6 +56,9 @@ class Device {
         promPM: json['promedioPM25'] == null
             ? null
             : double.parse("${json['promedioPM25']}"),
+        distance: json['distance'] == null
+            ? null
+            : double.parse("${json['distance']}"),
         wifiSSID: '',
         wifiPASS: '',
         swVersion: '');
