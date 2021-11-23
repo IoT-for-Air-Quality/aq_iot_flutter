@@ -48,13 +48,19 @@ class Device {
         organization: json['organization'] as int,
         display: json['display'],
         promCO: json['promedioCO'] == null
-            ? null
+            ? ((json['promedioCO2'] == null && json['promedioPM'] == null)
+                ? null
+                : 0)
             : double.parse("${json['promedioCO']}"),
         promCO2: json['promedioCO2'] == null
-            ? null
+            ? ((json['promedioCO'] == null && json['promedioPM'] == null)
+                ? null
+                : 0)
             : double.parse("${json['promedioCO2']}"),
         promPM: json['promedioPM25'] == null
-            ? null
+            ? ((json['promedioCO2'] == null && json['promedioCO'] == null)
+                ? null
+                : 0)
             : double.parse("${json['promedioPM25']}"),
         distance: json['distance'] == null
             ? null

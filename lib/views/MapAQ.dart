@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -13,6 +14,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:share/share.dart';
 
 class MapAQ extends StatefulWidget {
   MapAQ({Key? key}) : super(key: key);
@@ -36,6 +38,8 @@ class _MapAQState extends State<MapAQ> {
   late BitmapDescriptor pinLocationIcon;
   List<Measurement>? measurements;
   List<Device>? devices;
+
+  bool canDownload = false;
 
   bool isUpdatingMap = false;
 
@@ -120,6 +124,14 @@ class _MapAQState extends State<MapAQ> {
 
   void _closeEndDrawer() {
     Navigator.of(context).pop();
+  }
+
+  void _downloadMeasurements() {
+    String value = "";
+    for (var e in measurements!) {
+      value += "${e.timestamp},${e.value}\n";
+    }
+    Share.share(value);
   }
 
   Completer<GoogleMapController> _controller = Completer();
@@ -248,8 +260,18 @@ class _MapAQState extends State<MapAQ> {
               color: Colors.white,
             ),
           ),
-          title: const Text('AQ map'),
+          title: const Text('Mapa calidad del aire'),
           actions: [
+            measurements == null
+                ? Container()
+                : measurements!.length == 0
+                    ? Container()
+                    : IconButton(
+                        icon: Icon(Icons.download),
+                        onPressed: () {
+                          _downloadMeasurements();
+                        },
+                      ),
             IconButton(
               icon: Icon(Icons.settings),
               onPressed: () {
@@ -494,12 +516,11 @@ class _MapAQState extends State<MapAQ> {
                                                       ? " CO\u2082: ${e.promCO2!.toStringAsFixed(2)}"
                                                       : " PM 2.5: ${e.promPM!.toStringAsFixed(2)}",
                                               onTap: () {
-                                                Navigator.of(context)
-                                                    .pushReplacement(
-                                                        MaterialPageRoute(
-                                                            builder: (context) =>
-                                                                ManageDevice(
-                                                                    e, null)));
+                                                Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            ManageDevice(
+                                                                e, null)));
                                               }),
                                         ))
                                     .toSet(),

@@ -487,10 +487,10 @@ class _BTConectionSate extends State<BTConection> {
               margin: const EdgeInsets.all(10.0),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xfffcf4bf),
+                color: const Color(0xeefefeee),
                 border: Border.all(
                   color: Colors.black,
-                  width: 4,
+                  width: 1,
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -499,7 +499,10 @@ class _BTConectionSate extends State<BTConection> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Text("Bluetooth"),
+                      Text(
+                        "Bluetooth",
+                        style: TextStyle(fontSize: 17),
+                      ),
                       Switch(
                         value: _bluetoothState.isEnabled,
                         onChanged: (bool value) {
@@ -536,6 +539,14 @@ class _BTConectionSate extends State<BTConection> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       DropdownButton<DiscoveredDevice>(
+                          icon: const Icon(Icons.arrow_downward),
+                          iconSize: 24,
+                          elevation: 16,
+                          style: const TextStyle(color: Colors.deepPurple),
+                          underline: Container(
+                            height: 2,
+                            color: Colors.deepPurpleAccent,
+                          ),
                           items: devices
                               .map<DropdownMenuItem<DiscoveredDevice>>(
                                   (DiscoveredDevice value) {
@@ -550,7 +561,7 @@ class _BTConectionSate extends State<BTConection> {
                           onChanged: (value) => setState(() => device = value)),
                       ElevatedButton(
                         onPressed: _connect,
-                        child: Text('Connect'),
+                        child: Text('Conectar'),
                       ),
                     ],
                   ),

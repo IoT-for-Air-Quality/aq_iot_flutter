@@ -70,10 +70,16 @@ class _NetworkState extends State<Network> {
       HttpService()
           .getInfoAQ(value.latitude, value.longitude, currentRadius)
           .then((value) {
-        setState(() {
-          value.sort((a, b) => a.distance!.compareTo(b.distance!));
-          devices = value;
-        });
+        if (value.length > 0) {
+          setState(() {
+            value.sort((a, b) => a.distance!.compareTo(b.distance!));
+            devices = value;
+          });
+        } else {
+          setState(() {
+            devices = [];
+          });
+        }
       });
     });
     super.initState();
@@ -127,236 +133,266 @@ class _NetworkState extends State<Network> {
                         child: Text("Determinando tu ubicación..."))
                   ],
                 )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Container(
-                      width: 170,
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Text(
-                                  'CO',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                  ),
-                                ),
+              : devices!.length == 0
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                            height: 100,
+                            width: 300,
+                            child: Padding(
+                              padding: EdgeInsets.all(30),
+                              child: Text(
+                                "No se encontraron nodos cercanos a tu ubicacion",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              Container(
-                                  decoration: BoxDecoration(
-                                    color: (devices!
-                                                    .map((e) => e.promCO)
-                                                    .reduce(
-                                                        (a, b) => a! + b!)! /
-                                                devices!.length)! <
-                                            20
-                                        ? Colors.green[100]
-                                        : (devices!.map((e) => e.promCO).reduce(
-                                                        (a, b) => a! + b!)! /
+                            ))
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Container(
+                          width: 170,
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Text(
+                                      'CO',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                      decoration: BoxDecoration(
+                                        color: (devices!
+                                                        .map((e) => e.promCO)
+                                                        .reduce((a, b) =>
+                                                            a! + b!)! /
                                                     devices!.length)! <
-                                                50
-                                            ? Colors.amber[100]
-                                            : Colors.red[100],
-                                    border: Border.all(
-                                      color: (devices!
-                                                      .map((e) => e.promCO)
-                                                      .reduce(
-                                                          (a, b) => a! + b!)! /
-                                                  devices!.length)! <
-                                              20
-                                          ? Colors.green[400]!
-                                          : (devices!
+                                                20
+                                            ? Colors.green[100]
+                                            : (devices!
+                                                            .map(
+                                                                (e) => e.promCO)
+                                                            .reduce((a, b) =>
+                                                                a! + b!)! /
+                                                        devices!.length)! <
+                                                    50
+                                                ? Colors.amber[100]
+                                                : Colors.red[100],
+                                        border: Border.all(
+                                          color: (devices!
                                                           .map((e) => e.promCO)
                                                           .reduce((a, b) =>
                                                               a! + b!)! /
                                                       devices!.length)! <
-                                                  50
-                                              ? Colors.amber[400]!
-                                              : Colors.red[400]!,
-                                      width: 0.5,
-                                    ),
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                  child: Padding(
+                                                  20
+                                              ? Colors.green[400]!
+                                              : (devices!
+                                                              .map((e) =>
+                                                                  e.promCO)
+                                                              .reduce((a, b) =>
+                                                                  a! + b!)! /
+                                                          devices!.length)! <
+                                                      50
+                                                  ? Colors.amber[400]!
+                                                  : Colors.red[400]!,
+                                          width: 0.5,
+                                        ),
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Text(
+                                          "${(devices!.map((e) => e.promCO).reduce((a, b) => a! + b!)! / devices!.length).toStringAsFixed(2)} ppm",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ))
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
                                     padding: const EdgeInsets.all(10),
                                     child: Text(
-                                      "${(devices!.map((e) => e.promCO).reduce((a, b) => a! + b!)! / devices!.length).toStringAsFixed(2)} ppm",
+                                      'CO\u2082',
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: 15,
                                       ),
                                     ),
-                                  ))
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Text(
-                                  'CO\u2082',
-                                  style: TextStyle(
-                                    fontSize: 15,
                                   ),
-                                ),
-                              ),
-                              Container(
-                                  decoration: BoxDecoration(
-                                    color: (devices!
-                                                    .map((e) => e.promCO2)
-                                                    .reduce(
-                                                        (a, b) => a! + b!)! /
-                                                devices!.length)! <
-                                            50
-                                        ? Colors.green[100]
-                                        : (devices!
+                                  Container(
+                                      decoration: BoxDecoration(
+                                        color: (devices!
                                                         .map((e) => e.promCO2)
                                                         .reduce((a, b) =>
                                                             a! + b!)! /
                                                     devices!.length)! <
-                                                100
-                                            ? Colors.amber[100]
-                                            : Colors.red[100],
-                                    border: Border.all(
-                                      color: (devices!
-                                                      .map((e) => e.promCO2)
-                                                      .reduce(
-                                                          (a, b) => a! + b!)! /
-                                                  devices!.length)! <
-                                              20
-                                          ? Colors.green[400]!
-                                          : (devices!
+                                                50
+                                            ? Colors.green[100]
+                                            : (devices!
+                                                            .map((e) =>
+                                                                e.promCO2)
+                                                            .reduce((a, b) =>
+                                                                a! + b!)! /
+                                                        devices!.length)! <
+                                                    100
+                                                ? Colors.amber[100]
+                                                : Colors.red[100],
+                                        border: Border.all(
+                                          color: (devices!
                                                           .map((e) => e.promCO2)
                                                           .reduce((a, b) =>
                                                               a! + b!)! /
                                                       devices!.length)! <
-                                                  50
-                                              ? Colors.amber[400]!
-                                              : Colors.red[400]!,
-                                      width: 0.5,
-                                    ),
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                  child: Padding(
+                                                  20
+                                              ? Colors.green[400]!
+                                              : (devices!
+                                                              .map((e) =>
+                                                                  e.promCO2)
+                                                              .reduce((a, b) =>
+                                                                  a! + b!)! /
+                                                          devices!.length)! <
+                                                      50
+                                                  ? Colors.amber[400]!
+                                                  : Colors.red[400]!,
+                                          width: 0.5,
+                                        ),
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Text(
+                                          "${(devices!.map((e) => e.promCO2).reduce((a, b) => a! + b!)! / devices!.length).toStringAsFixed(2)} ppm",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ))
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
                                     padding: const EdgeInsets.all(10),
                                     child: Text(
-                                      "${(devices!.map((e) => e.promCO2).reduce((a, b) => a! + b!)! / devices!.length).toStringAsFixed(2)} ppm",
+                                      'PM 2.5',
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: 15,
                                       ),
                                     ),
-                                  ))
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Text(
-                                  'PM 2.5',
-                                  style: TextStyle(
-                                    fontSize: 15,
                                   ),
-                                ),
-                              ),
-                              Container(
-                                  decoration: BoxDecoration(
-                                    color: (devices!
-                                                    .map((e) => e.promPM)
-                                                    .reduce(
-                                                        (a, b) => a! + b!)! /
-                                                devices!.length)! <
-                                            0.25
-                                        ? Colors.green[100]
-                                        : (devices!.map((e) => e.promPM).reduce(
-                                                        (a, b) => a! + b!)! /
+                                  Container(
+                                      decoration: BoxDecoration(
+                                        color: (devices!
+                                                        .map((e) => e.promPM)
+                                                        .reduce((a, b) =>
+                                                            a! + b!)! /
                                                     devices!.length)! <
-                                                0.75
-                                            ? Colors.amber[100]
-                                            : Colors.red[100],
-                                    border: Border.all(
-                                      color: (devices!
-                                                      .map((e) => e.promPM)
-                                                      .reduce(
-                                                          (a, b) => a! + b!)! /
-                                                  devices!.length)! <
-                                              0.25
-                                          ? Colors.green[400]!
-                                          : (devices!
+                                                0.25
+                                            ? Colors.green[100]
+                                            : (devices!
+                                                            .map(
+                                                                (e) => e.promPM)
+                                                            .reduce((a, b) =>
+                                                                a! + b!)! /
+                                                        devices!.length)! <
+                                                    0.75
+                                                ? Colors.amber[100]
+                                                : Colors.red[100],
+                                        border: Border.all(
+                                          color: (devices!
                                                           .map((e) => e.promPM)
                                                           .reduce((a, b) =>
                                                               a! + b!)! /
                                                       devices!.length)! <
-                                                  0.75
-                                              ? Colors.amber[400]!
-                                              : Colors.red[400]!,
-                                      width: 0.5,
-                                    ),
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Text(
-                                      "${(devices!.map((e) => e.promPM).reduce((a, b) => a! + b!)! / devices!.length).toStringAsFixed(2)} mg/m\u00B3",
-                                      style: TextStyle(
-                                        fontSize: 10,
+                                                  0.25
+                                              ? Colors.green[400]!
+                                              : (devices!
+                                                              .map((e) =>
+                                                                  e.promPM)
+                                                              .reduce((a, b) =>
+                                                                  a! + b!)! /
+                                                          devices!.length)! <
+                                                      0.75
+                                                  ? Colors.amber[400]!
+                                                  : Colors.red[400]!,
+                                          width: 0.5,
+                                        ),
+                                        borderRadius: BorderRadius.circular(25),
                                       ),
-                                    ),
-                                  ))
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Text(
+                                          "${(devices!.map((e) => e.promPM).reduce((a, b) => a! + b!)! / devices!.length).toStringAsFixed(2)} mg/m\u00B3",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ))
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Text(
-                            "Dispositivos en cuenta",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
                         ),
-                        Container(
-                          height: 100,
-                          width: 150,
-                          child: ListView.builder(
-                              itemCount: devices!.length,
-                              itemBuilder: (BuildContext context2, int index) {
-                                return Container(
-                                    height: 20,
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                            child: GestureDetector(
-                                          child: Text(
-                                              "ID: ${devices![index].id} -  ${(devices![index].distance! * 1000)!.toStringAsFixed(1)}m"),
-                                          onTap: () {
-                                            Navigator.of(context)
-                                                .pushReplacement(
+                        Column(
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Text(
+                                "Dispositivos en cuenta",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              height: 100,
+                              width: 150,
+                              child: ListView.builder(
+                                  itemCount: devices!.length,
+                                  itemBuilder:
+                                      (BuildContext context2, int index) {
+                                    return Container(
+                                        height: 20,
+                                        child: Column(
+                                          children: [
+                                            Container(
+                                                child: GestureDetector(
+                                              child: Text(
+                                                  "ID: ${devices![index].id} -  ${(devices![index].distance! * 1000)!.toStringAsFixed(1)}m"),
+                                              onTap: () {
+                                                Navigator.of(context).push(
                                                     MaterialPageRoute(
                                                         builder: (context) =>
                                                             ManageDevice(
                                                                 devices![index],
                                                                 null)));
-                                          },
-                                        ))
-                                      ],
-                                    ));
-                              }),
+                                              },
+                                            ))
+                                          ],
+                                        ));
+                                  }),
+                            )
+                          ],
                         )
                       ],
-                    )
-                  ],
-                ),
+                    ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [

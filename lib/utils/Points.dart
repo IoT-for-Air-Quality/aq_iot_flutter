@@ -10,8 +10,12 @@ class MyPoints extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     Paint paint = Paint();
-    paint.color = Color.lerp(
-        Colors.greenAccent, Colors.redAccent, (value - min) / (max - min))!;
+    if (max == min) {
+      paint.color = Colors.black;
+    } else {
+      paint.color = Color.lerp(
+          Colors.greenAccent, Colors.redAccent, (value - min) / (max - min))!;
+    }
 
     canvas.drawCircle(Offset(10, 10), 10, paint);
   }

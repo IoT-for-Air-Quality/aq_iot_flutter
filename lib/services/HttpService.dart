@@ -68,7 +68,7 @@ class HttpService {
 
   Future<List<Device>> getDevicesOrganizationData(
       int organization, String startDate, String endDate) async {
-    debugPrint("heloooo");
+    debugPrint("${organization}");
     List<Device> devices = [];
     if (organization == 0) {
       List<Organization> organizations = await getOrganizations();

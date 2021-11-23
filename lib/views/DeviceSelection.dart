@@ -51,10 +51,10 @@ class _DeviceSelectionState extends State<DeviceSelection> {
       margin: const EdgeInsets.all(10.0),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xfffcf4bf),
+        color: const Color(0xeefefeee),
         border: Border.all(
           color: Colors.black,
-          width: 4,
+          width: 1,
         ),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -65,7 +65,10 @@ class _DeviceSelectionState extends State<DeviceSelection> {
             children: [
               Padding(
                 padding: EdgeInsets.all(7.5),
-                child: Text("Devices from organization"),
+                child: Text(
+                  "Dispositivos según organización",
+                  style: TextStyle(fontSize: 17),
+                ),
               )
             ],
           ),
@@ -91,7 +94,7 @@ class _DeviceSelectionState extends State<DeviceSelection> {
                           setState(() {
                             dropdownValue = newValue;
                             device.organization = dropdownValue!.id;
-
+                            dropdownDevice = null;
                             devices = value;
                           });
                         });
@@ -111,33 +114,38 @@ class _DeviceSelectionState extends State<DeviceSelection> {
             children: [
               devices == null
                   ? Container()
-                  : DropdownButton<Device>(
-                      value: dropdownDevice,
-                      icon: const Icon(Icons.arrow_downward),
-                      iconSize: 24,
-                      elevation: 16,
-                      style: const TextStyle(color: Colors.deepPurple),
-                      underline: Container(
-                        height: 2,
-                        color: Colors.deepPurpleAccent,
-                      ),
-                      onChanged: (Device? newValue) {
-                        setState(() {
-                          dropdownDevice = newValue!;
-                          device.id = dropdownDevice!.id;
-                        });
-                      },
-                      items: devices!
-                          .map<DropdownMenuItem<Device>>((Device value) {
-                        return DropdownMenuItem<Device>(
-                          value: value,
-                          child: Text("${value.id}"),
-                        );
-                      }).toList(),
+                  : Row(
+                      children: [
+                        Text("ID:"),
+                        DropdownButton<Device>(
+                          value: dropdownDevice,
+                          icon: const Icon(Icons.arrow_downward),
+                          iconSize: 24,
+                          elevation: 16,
+                          style: const TextStyle(color: Colors.deepPurple),
+                          underline: Container(
+                            height: 2,
+                            color: Colors.deepPurpleAccent,
+                          ),
+                          onChanged: (Device? newValue) {
+                            setState(() {
+                              dropdownDevice = newValue!;
+                              device.id = dropdownDevice!.id;
+                            });
+                          },
+                          items: devices!
+                              .map<DropdownMenuItem<Device>>((Device value) {
+                            return DropdownMenuItem<Device>(
+                              value: value,
+                              child: Text("${value.id}"),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
               ElevatedButton(
                 onPressed: _selectDevice,
-                child: Text('View data'),
+                child: Text('Ver nodo'),
               ),
             ],
           )

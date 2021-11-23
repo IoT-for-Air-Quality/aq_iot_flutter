@@ -16,11 +16,27 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AQ IoT sensor nodes'),
+        title: const Text('Página principal'),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Padding(
+                    padding: EdgeInsets.all(17.5),
+                    child: Expanded(
+                      child: Text(
+                        "Conectarse a un nodo",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 30,
+                        ),
+                      ),
+                    ))
+              ],
+            ),
             kIsWeb ? Container() : BTConection(),
             DeviceSelection(),
             Network()

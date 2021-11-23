@@ -434,7 +434,7 @@ class _ManageDeviceState extends State<ManageDevice> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('AQ iot nodes managment'),
+          title: Text('Información del nodo ${widget.device.id}'),
         ),
         body: SingleChildScrollView(
           child: widget.device == null
