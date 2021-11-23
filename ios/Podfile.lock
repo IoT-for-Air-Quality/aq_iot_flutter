@@ -17,6 +17,8 @@ PODS:
     - Flutter
     - Protobuf (~> 3.5)
     - SwiftProtobuf (~> 1.0)
+  - share (0.0.1):
+    - Flutter
   - SwiftProtobuf (1.18.0)
   - wifi_iot (0.0.1):
     - Flutter
@@ -27,6 +29,7 @@ DEPENDENCIES:
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/ios`)
   - google_maps_flutter (from `.symlinks/plugins/google_maps_flutter/ios`)
   - reactive_ble_mobile (from `.symlinks/plugins/reactive_ble_mobile/ios`)
+  - share (from `.symlinks/plugins/share/ios`)
   - wifi_iot (from `.symlinks/plugins/wifi_iot/ios`)
 
 SPEC REPOS:
@@ -46,6 +49,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/google_maps_flutter/ios"
   reactive_ble_mobile:
     :path: ".symlinks/plugins/reactive_ble_mobile/ios"
+  share:
+    :path: ".symlinks/plugins/share/ios"
   wifi_iot:
     :path: ".symlinks/plugins/wifi_iot/ios"
 
@@ -57,6 +62,7 @@ SPEC CHECKSUMS:
   GoogleMaps: 025272d5876d3b32604e5c080dc25eaf68764693
   Protobuf: 3724efa50cb2846d7ccebc8691c574e85fd74471
   reactive_ble_mobile: 9ce6723d37ccf701dbffd202d487f23f5de03b4c
+  share: 0b2c3e82132f5888bccca3351c504d0003b3b410
   SwiftProtobuf: c3c12645230d9b09c72267e0de89468c5543bd86
   wifi_iot: b5aafd6f9b52f8a357383a1deabab45f31cd602d
 
